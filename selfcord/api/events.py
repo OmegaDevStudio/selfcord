@@ -1,4 +1,5 @@
 import itertools
+from aioconsole import aprint
 from ..models import Guild, Convert, User, Message
 
 
@@ -47,6 +48,7 @@ class Handler:
 
 
     async def handle_ready_supplemental(self, data: dict):
+        await aprint(data)
         pass
 
     async def handle_message_create(self, data: dict):

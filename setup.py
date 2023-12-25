@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import sys
 from setuptools import find_packages, setup
 
 this_directory = Path(__file__).parent
@@ -21,7 +21,11 @@ if __name__ == "__main__":
         description="A Discord API wrapper designed for selfbots!",
         readme="README.md",
         author="Shell",
-        extras_require={"voice": ["pynacl==1.5.0", "opuslib==3.0.1"]},
+        extras_require={
+            "voice": ["pynacl==1.5.0", "opuslib==3.0.1"],
+            "linux": ["uvloop==0.17.0"],
+            "windows": ["winloop==0.1.0"]
+        },
         license="MIT",
         install_requires=[
             "aiohttp==3.8.5",
@@ -29,8 +33,8 @@ if __name__ == "__main__":
             "websockets==10.1",
             "ujson==5.7.0",
             "aiofiles==0.8.0",
-            "requests==2.31.0"
-        ],
+            "requests==2.31.0",
+        ] + ["uvloop==0.17.0"] if sys.platform == "linux" else ["winloop==0.1.0"],
         setup_requires=["pytest-runner"],
         tests_require=["pytest"],
         test_suite="tests",

@@ -5,7 +5,7 @@ import re
 import shlex
 from collections import defaultdict
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .logging import logging
 
@@ -491,24 +491,17 @@ class Context:
         message: Message = await self.channel.reply(self.message, content, file_paths, delete_after, tts)
         return message
 
-    async def send(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Message:
+    async def send(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:
         """Helper function to send message to the current channel
 
         Args:
             content (str): The message you would like to send
             tts (bool, optional): Whether message should be tts or not. Defaults to False.
         """
-        message: Message = await self.channel.send(content=content, files=file_paths, delete_after=delete_after, tts=tts)
-        return message
-
-    async def spam(self, amount: int, content, file_paths: list = [], tts: bool = False):
-        """Helper function to spam messages in the current channel (uses asyncio.gather !!!!)
-
-        Args:
-            amount (int): Amount of messages to spam
-            content (str): The message you would like to send
-        """
-        await self.channel.spam(amount, content, file_paths, tts)
+        json = await self.channel.send(content=content, files=file_paths, delete_after=delete_after, tts=tts)
+        
+        return Message(json, self.bot) or None
+    
 
     async def purge(self, amount: int = 0):
         """Helper function to purge messages in the current channel, uses asyncio gather.

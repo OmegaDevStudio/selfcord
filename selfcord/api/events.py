@@ -65,7 +65,7 @@ class Handler:
                 check_user.partial_update(friend)
         for guild in data['merged_members']:
             for member in guild:
-                check_user = self.bot.fetch_user(friend['id'])
+                check_user = self.bot.fetch_user(member['id'])
                 if check_user is None:
                     user = User(member, self.bot)
                     self.bot.cached_users[user.id] = user

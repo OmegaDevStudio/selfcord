@@ -1,7 +1,0 @@
-selfcord
-========
-
-.. toctree::
-   :maxdepth: 2
-
-   selfcord

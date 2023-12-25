@@ -18,11 +18,11 @@ lib, _, _ = __name__.partition(".")
 log = logging.getLogger(__name__)
 
 
-class http:
+class HttpClient:
     """Base HTTP class to aid making requests via discord api"""
 
-    def __init__(self, debug=False) -> None:
-        self.debug = debug
+    def __init__(self, bot) -> None:
+        self.bot = bot
         xproperties = [
             "eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiRmlyZWZveCIsImRldmljZSI6IiIsInN5c3RlbV9sb2NhbGUiOiJmciIsImJyb3dzZXJfdXNlcl9hZ2VudCI6Ik1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQ7IHJ2OjEwMi4wKSBHZWNrby8yMDEwMDEwMSBGaXJlZm94LzEwMi4wIiwiYnJvd3Nlcl92ZXJzaW9uIjoiMTAyLjAiLCJvc192ZXJzaW9uIjoiMTAiLCJyZWZlcnJlciI6IiIsInJlZmVycmluZ19kb21haW4iOiIiLCJyZWZlcnJlcl9jdXJyZW50IjoiIiwicmVmZXJyaW5nX2RvbWFpbl9jdXJyZW50IjoiIiwicmVsZWFzZV9jaGFubmVsIjoic3RhYmxlIiwiY2xpZW50X2J1aWxkX251bWJlciI6MTU0MTg2LCJjbGllbnRfZXZlbnRfc291cmNlIjpudWxsfQ==",
             "eyJvcyI6IkxpbnV4IiwiYnJvd3NlciI6IkRpc2NvcmQgQ2xpZW50IiwicmVsZWFzZV9jaGFubmVsIjoiY2FuYXJ5IiwiY2xpZW50X3ZlcnNpb24iOiIwLjAuMTQwIiwib3NfdmVyc2lvbiI6IjUuMTkuMC0zLXJ0MTAtTUFOSkFSTyIsIm9zX2FyY2giOiJ4NjQiLCJzeXN0ZW1fbG9jYWxlIjoiZW4tR0IiLCJ3aW5kb3dfbWFuYWdlciI6IktERSx1bmtub3duIiwiZGlzdHJvIjoiXCJNYW5qYXJvIExpbnV4XCIiLCJjbGllbnRfYnVpbGRfbnVtYmVyIjoxNTQyMTYsImNsaWVudF9ldmVudF9zb3VyY2UiOm51bGx9",
@@ -45,10 +45,6 @@ class http:
         await self.get_cookie()
         self.token = token
         data = await self.request("get", "/users/@me")
-        self.client = Client(data)
-        if self.debug:
-            log.debug("Finished Static login")
-            log.info(f"Gathered information on {self.client}")
         return data
 
     async def get_cookie(self):
@@ -77,9 +73,6 @@ class http:
             ) as resp:
                 json = await resp.json()
                 self.fingerprint = json["fingerprint"]
-        if self.debug:
-            log.debug("Gathered cookie and fingerprint")
-            log.info(f"Fingerprint Gathered: {self.fingerprint}")
 
     def remove_dupes(self, dictionary: dict):
         return set(dictionary)
@@ -128,11 +121,9 @@ class http:
             ),
             headers=headers,
         ) as session:
-            request = getattr(session, method)
+            request = getattr(session, method.lower())
             while True:
                 async with request(url, *args, **kwargs) as resp:
-                    if self.debug:
-                        log.debug(f"Sent Request Method: {method} URL: {url} Payload: {args} {kwargs}")
 
                     if resp.status == 429:
                         try:
@@ -180,11 +171,7 @@ class http:
                         break
 
                     else:
-                        if self.debug:
-                            log.error(f"Unknown Error: {resp.status}")
-                            log.info(
-                                f"Attempted to send request to URL: {url} PAYLOAD: {args} {kwargs}"
-                            )
+
                         try:
                             json = await resp.json()
                             await aprint(json)
@@ -227,7 +214,4 @@ class http:
             async with session.get(f"{url}") as resp:
                 image = b64encode(await resp.read())
                 newobj = str(image).split("'", 2)
-        if self.debug:
-            log.debug("Finished encoding image")
-            log.info(f"Encoded Image: {url}")
         return f"data:image/png;base64,{newobj[1]}"

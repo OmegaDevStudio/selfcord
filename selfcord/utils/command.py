@@ -309,10 +309,10 @@ class Extender:
 class Context:
     """Context related for commands, and invocation"""
 
-    def __init__(self, bot, message, http) -> None:
+    def __init__(self, message: Message, bot: Bot) -> None:
         self.bot: Bot = bot
         self.message = message
-        self.http = http
+        self.http = bot.http
 
     @property
     def author(self) -> User:
@@ -498,7 +498,7 @@ class Context:
             content (str): The message you would like to send
             tts (bool, optional): Whether message should be tts or not. Defaults to False.
         """
-        message: Message = await self.channel.send(content=content, file_paths=file_paths, delete_after=delete_after, tts=tts)
+        message: Message = await self.channel.send(content=content, files=file_paths, delete_after=delete_after, tts=tts)
         return message
 
     async def spam(self, amount: int, content, file_paths: list = [], tts: bool = False):

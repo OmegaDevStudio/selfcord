@@ -1,372 +1,192 @@
 from __future__ import annotations
-
-import random
-from datetime import datetime, timedelta, timezone
-from itertools import zip_longest
-from typing import TYPE_CHECKING
-
-from .channel import (Category, ForumChannel, Messageable, TextChannel,
-                      ThreadChannel, VoiceChannel)
-from .emoji import Emoji
-from .role import Role
-from .user import User
-
+import itertools
+from typing import TYPE_CHECKING, Optional
+from .assets import Asset
+from .channels import Convert
 if TYPE_CHECKING:
-    from ..api import http
     from ..bot import Bot
 
 
 class Guild:
-    """Guild Object"""
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
 
-    TEXTCHANNEL = 0
-    VOICECHANNEL = 2
-    CATEGORY = 4
-    GUILD_ANNOUNCEMENT = 5
-    ANNOUNCEMENT_THREAD = 10
-    PUBLIC_THREAD = 11
-    PRIVATE_THREAD = 12
-    GUILD_STAGE_VOICE = 13
-    GUILD_DIRECTORY = 14
-    GUILD_FORUM = 15
-
-    def __init__(self, data: dict, bot: Bot, http: http) -> None:
-        self.roles: list[Role] = []
+    def update(self, payload: dict):
+        self.channels: list[Channel] = []
         self.emojis: list[Emoji] = []
-        self.members: list[User] = []
-        self.channels: list[Messageable] = []
-        self.http: http = http
-        self.bot: Bot = bot
-        self._update(data)
-
-    def __str__(self) -> str:
-        return f"{self.name}"
-
-    def __eq__(self, other):
-        return self.id == other.id
-
-    def _update(self, data):
-        """Updater method intended to create the attributes for the object
-
-        Args:
-            data (dict): JSON data from gateway
-        """
-        self.id = data.get("id")
-        self.name = data.get("name")
-        self.icon = data.get("icon")
-        if self.icon is not None:
-            if self.icon.startswith("a_"):
-                self.icon_url = f"https://cdn.discordapp.com/icons/{self.id}/{self.icon}.gif?size=4096"
-            else:
-                self.icon_url = f"https://cdn.discordapp.com/icons/{self.id}/{self.icon}.png?size=4096"
-        else:
-            self.icon_url = None
-
-        self.region = data.get("region")
-        self.splash = data.get("splash")
-        self.mfa_level = data.get("mfa_level")
-        self.features = data.get("features")
-        self.member_count = data.get("member_count")
-        self.unavailable = data.get("unavailable")
-        self.verification_level = data.get("verification_level")
-        self.explicit_content_filter = data.get("explicit_content_filter")
-        self.owner_id = data.get("owner_id")
-        members, channels, roles, emojis = (data.get("members") if data.get("members") is not None else [], data.get("channels") if data.get("channels") is not None else [],data.get("roles") if data.get("roles") is not None else [], data.get("emojis") if data.get("emojis") is not None else [])
-        
-        for member, channel, role, emoji in zip_longest(
-            members,
-            channels,
-            roles,
-            emojis
+        self.stickers: list[Sticker] = []
+        self.roles: list[Role] = []
+        # MUH OPTIMISATIONS: Zip Longest very cool bro
+        for emoji, sticker, role, channel in itertools.zip_longest(
+            payload["emojis"] if payload.get("emojis") is not None else [],
+            payload["stickers"] if payload.get("stickers") is not None else [],
+            payload["roles"] if payload.get("roles") is not None else [],
+            payload["channels"] if payload.get("channels") is not None else [],
         ):
-            if member != None:
-                user = User(member, self.bot, self.http)
+            if emoji is not None:
+                self.emojis.append(Emoji(emoji, self.bot))
 
-                self.members.append(user)
+            if sticker is not None:
+                self.stickers.append(Sticker(sticker, self.bot))
 
-            if channel != None:
-                type = channel.get("type")
-                if type == self.TEXTCHANNEL or type not in [
-                    self.VOICECHANNEL,
-                    self.CATEGORY,
-                    self.GUILD_FORUM
-                ]:
-                    channel = TextChannel(channel, self.bot, self.http)
-                elif type == self.VOICECHANNEL:
-                    channel = VoiceChannel(channel, self.bot, self.http)
-                elif type == self.GUILD_FORUM:
-                    channel = ForumChannel(channel, self.bot, self.http)
-                elif type in [self.PUBLIC_THREAD, self.PRIVATE_THREAD]:
-                    channel = ThreadChannel(channel, self.bot, self.http)
-                else:
-                    channel = Category(channel, self.bot, self.http)
-                channel.guild_id = self.id
-                self.channels.append(channel)
-            if role != None:
-                role = Role(role, self.bot, self.http, guild_id=self.id)
-                self.roles.append(role)
+            if role is not None:
+                self.roles.append(Role(role, self.bot))
 
-            if emoji != None:
-                emoji = Emoji(emoji, self.bot, self.http)
-                emoji.guild_id = self.id
-                self.emojis.append(emoji)
+            if channel is not None:
+                chan = Convert(channel, self.bot)
+                self.channels.append(chan)
+                if self.bot.user:
+                    self.bot.cached_channels[chan.id] = chan
 
-        
+        self.member_count = payload.get("member_count")
+        self.lazy = payload.get("lazy")
+        self.large = payload.get("large")
+        self.joined_at = payload.get("joined_at")
+        properties: Optional[dict] = payload.get("properties")
+        if properties:
+            self.id: str = properties["id"]
+            self.owner_id: Optional[str] = (
+                properties["owner_id"]
+                if properties.get("owner_id") is not None
+                else None
+            )
+            self.premium_tier: Optional[int] = properties.get("premium_tier")
+            self.splash: Optional[Asset] = (
+                Asset(self.id, properties["splash"])
+                if properties.get("splash") is not None
+                else None
+            )
+            self.nsfw_level: Optional[str] = (
+                properties["nsfw_level"]
+                if properties.get("nsfw_level") is not None
+                else None
+            )
+            self.application_id: Optional[str] = (
+                properties["application_id"]
+                if properties.get("application_id") is not None
+                else None
+            )
+            self.system_channel_flags: Optional[int] = properties.get(
+                "system_channel_flags"
+            )
+            self.inventory_settings: Optional[str] = properties.get(
+                "inventory_settings"
+            )
+            self.default_message_notifications: Optional[int] = properties.get(
+                "default_message_notifications"
+            )
+            self.hub_type: Optional[int] = properties.get("hub_type")
+            self.afk_channel: Optional[str] = properties.get("afk_channel")
+            self.incidents_data: Optional[int] = properties.get(
+                "incidents_data")
+            self.discovery_splash: Optional[Asset] = (
+                Asset(self.id, properties["discovery_splash"])
+                if properties.get("discovery_splash") is not None
+                else None
+            )
+            self.preferred_locale: Optional[str] = properties.get(
+                "preferred_locale")
+            self.icon: Optional[Asset] = (
+                Asset(self.id, properties["icon"]).from_icon()
+                if properties.get("discovery_splash") is not None
+                else None
+            )
+            self.latest_onboarding_question_id: Optional[str] = properties.get(
+                "latest_onboarding_question_id"
+            )
+            self.explicit_content_filter: Optional[int] = properties.get(
+                "explicit_content_filter"
+            )
+            self.description: Optional[str] = properties.get("description")
+            self.afk_timeout: Optional[int] = properties.get("afk_timeout")
+            self.max_video_channel_users: Optional[int] = properties.get(
+                "max_video_channel_users"
+            )
+            self.nsfw: Optional[bool] = properties.get("nsfw")
+            self.system_channel_id: Optional[str] = properties.get(
+                "system_channel_id")
+            self.rules_channel_id: Optional[str] = properties.get(
+                "rules_channel_id")
+            self.max_stage_video_channel_users: Optional[int] = properties.get(
+                "max_stage_video_channel_users"
+            )
+            self.banner: Optional[Asset] = (
+                Asset(self.id, properties["banner"])
+                if properties.get("banner") is not None
+                else None
+            )
+            self.public_updates_channel_id: Optional[int] = properties.get(
+                "public_updates_channel_id"
+            )
+            self.mfa_level: Optional[int] = properties.get("mfa_level")
+            self.features: Optional[list[str]] = properties.get("features")
+            self.max_members: Optional[int] = properties.get("max_members")
+            self.name: Optional[str] = properties.get("name")
+            self.safety_alerts_channel_id: Optional[int] = properties.get(
+                "safety_alerts_channel_id"
+            )
+            self.premium_progress_bar_enabled: Optional[bool] = properties.get(
+                "premium_progress_bar_enabled"
+            )
+            self.verification_level: Optional[int] = properties.get(
+                "verification_level"
+            )
+            self.home_header: Optional[str] = properties.get("home_header")
+            self.vanity_url_code: Optional[str] = properties.get(
+                "vanity_url_code")
 
-    async def search(
-        self,
-        content: str | None = None,
-        author: str | None = None,
-        mentions: str | None = None,
-        has: str | None = None,
-        before: float | None = None,
-        after: float | None = None,
-        offset: int | None = None,
-        pinned: str | None = None,
-        channel: str | None = None
-    ):
-        """
-        Search through channel with specific parameters
 
-        Args:
-            content (str) : Content to search for.
-            author (str) : Author to search for.
-            mentions (str) : Mention to search for.
-            has (str) : Message that contains (file, image, video, etc).
-            before (time) : Before a timestamp.
-            after (time) : After a timestamp.
-            offset (int) : How many messages after to search.
+class Emoji:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
 
-        Returns:
-            total (int) : Total amount of messages possible of receiving.
-            messages (list[Message]) : List of message objects gathered
-
-        """
-        from selfcord.models import Message
-        url = f"/guilds/{self.id}/messages/search"
-        params = {
-            "content": content,
-            "author_id": author,
-            "mentions": mentions,
-            "has": has,
-            "max_id": before,
-            "min_id": after,
-            "offset": offset,
-            "pinned": pinned,
-            "channel_id": channel,
-        }
-        index = 0
-        for key, value in params.items():
-            if value is not None:
-                index += 1
-                param = f"{key}={value}"
-                if index == 1:
-                    param = "?" + param
-                else:
-                    param = "&" + param
-                url += param
-
-        json = await self.http.request("get", url)
-        total = json.get("total_results")
-        messages = json['messages']if json.get("messages") is not None else []
-        
-        new_msgs = []
-        for msgs in messages:
-            for msg in msgs:
-                msg = Message(msg, self.bot, self.http)
-                if msg.guild_id is None:
-                    setattr(msg, "guild_id", self.id)
-                new_msgs.append(msg)
-        return total, new_msgs
- 
+    def update(self, payload: dict):
+        self.roles = payload.get("roles")
+        self.name = payload.get("name")
+        self.require_colons = payload.get("require_colons")
+        self.managed = payload.get("managed")
+        self.id = payload["id"]
+        self.available = payload.get("available")
+        self.animated = payload.get("animated")
 
 
+class Role:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
 
-    async def ban(self, user_id: str):
-        """Bans a user from the guild
+    def update(self, payload: dict):
+        self.unicode_emoji = payload.get("unicode_emoji")
+        self.position = payload.get("position")
+        self.permissions = payload.get("permissions")
+        self.name = payload.get("name")
+        self.mentionable = payload.get("mentionable")
+        self.managed = payload.get("managed")
+        self.id = payload["id"]
+        self.icon = payload.get("icon")
+        self.hoist = payload.get("hoist")
+        self.flags = payload.get("flags")
+        self.color = payload.get("color")
 
-        Args:
-            user_id (str): User ID specified to ban
-        """
-        await self.http.request(
-            method="put",
-            endpoint=f"/guilds/{self.id}/bans/{user_id}",
-            json={"delete_message_days": "7"},
-        )
 
-    async def kick(self, user_id: str):
-        """Kicks a user from the guild
+class Sticker:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
 
-        Args:
-            user_id (str): User ID specified to kick
-        """
-        await self.http.request(
-            method="delete", endpoint=f"/guilds/{self.id}/members/{user_id}"
-        )
-
-    def utc_now(self):
-        return datetime.now(timezone.utc)
-
-    async def timeout(
-        self, user_id: str, hours: int = 0, mins: int = 0, seconds: int = 0
-    ):
-        """Timeouts a user in the guild
-
-        Args:
-            user_id (str): User ID specified to timeout
-        """
-        duration = self.utc_now() + timedelta(
-            hours=hours, minutes=mins, seconds=seconds
-        )
-        await self.http.request(
-            method="patch",
-            endpoint=f"/guilds/{self.id}/members/{user_id}",
-            json={"communication_disabled_until": str(duration)},
-        )
-
-    async def txt_channel_create(self, name: str, parent_id: str | None= None):
-        """Creates a Text Channel in the guild
-
-        Args:
-            name (str): Name of the channel
-            parent_id (str, optional): ID of the category. Defaults to None.
-        """
-        payload = {"name": name, "permission_overwrites": [], "type": 0}
-        if parent_id != None:
-            payload["parent_id"] = parent_id
-
-        channel = await self.http.request(
-            method="post", endpoint=f"/guilds/{self.id}/channels", json=payload
-        )
-        return TextChannel(channel, self.bot, self.http)
-
-    async def forum_channel_create(self, name: str, parent_id : str | None = None):
-        """Creates a Forum channel in the guild
-
-        Args:
-            name (str): Name of the channel
-            parent_id  (str, optional): ID of the category, defaults to None.
-        """
-        payload = {"name": name, "permission_overwrites": [], "type": 15}
-        if parent_id is not None:
-            payload['parent_id'] = parent_id
-
-        return ForumChannel((await self.http.request("post", f"/guilds/{self.id}/channels", json=payload)), self.bot, self.http)
-
-    async def vc_channel_create(self, name: str):
-        """Creates a voice channel in the guild
-
-        Args:
-            name (str): Name of the channel
-        """
-        channel = await self.http.request(
-            method="post",
-            endpoint=f"/guilds/{self.id}/channels",
-            json={"name": f"{name}", "permission_overwrites": [], "type": 2},
-        )
-        return VoiceChannel(channel, self.bot, self.http)
-
-    async def role_create(self, name: str):
-        """Creates a role in the guild
-
-        Args:
-            name (str): Name of the role
-        """
-        role = await self.http.request(
-            method="post", endpoint=f"/guilds/{self.id}/roles", json={"name": f"{name}"}
-        )
-        return Role(role, self.bot, self.http, guild_id=self.id)
-
-    async def category_channel_create(self, name: str):
-        """Creates a category in the guild
-
-        Args:
-            name (str): Name of the category
-        """
-        channel = await self.http.request(
-            method="post",
-            endpoint=f"/guilds/{self.id}/channels",
-            json={"name": f"{name}", "permission_overwrites": [], "type": 4},
-        )
-        return Category(channel, self.bot, self.http)
-
-    async def emoji_create(self, name: str, image_url: str):
-        """Creates an emoji in the guild
-
-        Args:
-            name (str): Name of the emoji
-            image_url (str): URL for an image
-        """
-        image = await self.http.encode_image(image_url)
-        emoji = await self.http.request(
-            method="post",
-            endpoint=f"/guilds/{self.id}/emojis",
-            json={"name": f"{name}", "image": image},
-        )
-        return Emoji(emoji, self.bot, self.http)
-
-    
-
-    async def get_members(self, channel_id: str):
-        """Get guild members for a guild via chunking
-
-        Args:
-            channel_id (str): Channel ID to chunk from
-        """
-        await self.bot.gateway.lazy_chunk(self.id, channel_id, self.member_count)
-
-    async def cache_guild(self, channel_id: str):
-        """Cache a guild for events
-
-        Args:
-            channel_id (str): Channel ID to cache from
-        """
-        await self.bot.gateway.cache_guild(self.id, channel_id)
-
-    async def edit(
-        self,
-        name: str = None,
-        icon_url: str = None,
-        banner_url: str = None,
-        description: str = None,
-    ):
-        """Edits attributes for a guild
-
-        Args:
-            name (str, optional): Name of the guild. Defaults to None.
-            icon_url (str, optional): Image URL for Icon. Defaults to None.
-            banner_url (str, optional): Image URL for Banner. Defaults to None.
-            description (str, optional): Description of the guild. Defaults to None.
-        """
-        fields = {}
-        if name != None:
-            fields["name"] = name
-
-        if description != None:
-            fields["description"] = description
-
-        if icon_url != None:
-            data = await self.http.encode_image(icon_url)
-            fields["icon"] = data
-
-        if banner_url != None:
-            data = await self.http.encode_image(banner_url)
-            fields["banner"] = data
-
-        await self.http.request(
-            method="patch",
-            endpoint=f"/guilds/{self.id}",
-            headers={
-                "origin": "https://discord.com",
-                "referer": f"https://discord.com/channels/{self.id}/{random.choice(self.channels)}",
-            },
-            json=fields,
-        )
-
-    async def delete(self):
-        """Deletes the Guild Object"""
-        await self.http.request(method="delete", endpoint=f"/guilds/{self.id}")
-
-    async def ack(self):
-        # marks the guild as read
-        await self.http.request(method="post", endpoint=f"/guilds/{self.id}/ack")
+    def update(self, payload: dict):
+        self.type = payload.get("type")
+        self.tags = payload.get("tags")
+        self.name = payload.get("name")
+        self.id = payload.get("id")
+        self.guild_id = payload.get("guild_id")
+        self.format_type = payload.get("format_type")
+        self.description = payload.get("description")
+        self.available = payload.get("available")
+        self.asset = payload.get("asset")

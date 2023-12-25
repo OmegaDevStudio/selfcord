@@ -13,7 +13,7 @@ import time
 import urllib
 from collections import defaultdict
 from traceback import format_exception
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
 
 import aiofiles
@@ -22,17 +22,19 @@ from aioconsole import aexec, aprint
 
 from selfcord.models.sessions import Session
 
-from .api import Activity, gateway, http
-from .models import (Client, DMChannel, GroupChannel, Guild, InteractionUtil,
-                     Message, Option, Search, SlashCommand, TextChannel, User,
-                     VoiceChannel, Application)
-from .utils import (Command, CommandCollection, Context, Event, Extension,
-                    ExtensionCollection, logging)
+from .api import Gateway, HttpClient
+from .models import (
+    Client, DMChannel, GroupChannel, Guild,
+    Message, TextChannel, User, VoiceChannel,
+    Capabilities, Convert, Messageable
+)
+from .utils import (
+    Command, CommandCollection, Context, Event, Extension,
+    ExtensionCollection, logging
+)
 from .utils.logging import handler
 
-if TYPE_CHECKING:
-    from .api.gateway import gateway
-    from .api.http import http
+
 
 log = logging.getLogger(__name__)
 
@@ -50,36 +52,33 @@ class Bot:
 
     def __init__(
         self,
-        debug: bool = False,
         prefixes: list[str] = ["s!"],
         inbuilt_help: bool = True,
         userbot: bool = False,
         eval: bool = False,
-    	password: str = None
+    	password: Optional[str] = None
     ) -> None:
         self.inbuilt_help: bool = inbuilt_help
-        self.debug: bool = debug
-        self.token = None
-        self.http: http = http(debug)
+        self.token: str
+        self.http: HttpClient = HttpClient(self)
         self.t1: float = time.perf_counter()
-        self.session_id = None
-        self.resume_url = None
-        self.gateway: gateway = gateway(self.http, self.debug)
+        self.session_id: str
+        self.resume_url: str
+        self.capabilities: Capabilities = Capabilities.default()
         self._events = defaultdict(list)
         self.commands = CommandCollection()
         self.prefixes: list[str] = (
             prefixes if isinstance(prefixes, list) else [prefixes]
         )
         self.extensions = ExtensionCollection()
-        self.user = None
+        self.user: Client
         self.eval: bool = eval
         self.userbot: bool = userbot
-        if self.debug:
-            logging.basicConfig(
-                level=logging.DEBUG,
-                handlers=[handler],
-            )
         self.password = password
+        self.cached_users: dict[str, User] = {}
+        self.cached_channels: dict[str, Messageable] = {}
+        self.cached_messages: dict[str, Message] = {}
+        self.gateway: Gateway = Gateway(self)
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -97,22 +96,16 @@ class Bot:
 
         async def runner():
             data = await self.http.static_login(token)
-            self.user = Client(data)
-            try:
-                await self.gateway.start(token, self.user, self)
-            except Exception as e:
-                error = "".join(format_exception(e, e, e.__traceback__))
-                log.error(f"Error related to gateway\n{error}")
-            if self.debug:
-                log.info("Started Bot")
-                log.info(f"Logged in as {self.user}")
-
+            if data is not None:
+                self.user = Client(data, self)
+                try:
+                    await self.gateway.start(token)
+                except Exception as e:
+                    raise e
         try: 
             asyncio.run(runner())
         except Exception as e:
-            error = format_exception(e, e, e.__traceback__)
-            log.error(f"Error related to initial run\n{error}")
-            return 
+            raise e
 
     @property
     def latency(self):
@@ -264,13 +257,17 @@ class Bot:
         # try:
         if hasattr(self, on_event):
             await getattr(self, on_event)(*args, **kwargs)
+        
         if event in self._events.keys():
             for Event in self._events[event]:
-                if Event.coro.__code__.co_varnames[0] == "self":
+                if len(Event.coro.__code__.co_varnames) == 0:
+                    asyncio.create_task(Event.coro(*args, **kwargs))
+                elif Event.coro.__code__.co_varnames[0] == "self":
                     asyncio.create_task(Event.coro(Event.ext, *args, **kwargs))
 
                 else:
                     asyncio.create_task(Event.coro(*args, **kwargs))
+        
 
     def cmd(self, description="", aliases=[]):
         """Decorator to add commands for the bot
@@ -333,7 +330,6 @@ class Bot:
             msg (str): The message containing command
         """
         context = Context(self, msg, self.http)
-
         asyncio.create_task(context.invoke())
 
     async def load_extension(self, name: str | None = None, url: str | None = None, dir: str | None = None):
@@ -397,15 +393,13 @@ class Bot:
                 
                 
         try:
-            name = importlib.util.resolve_name(name, None)
+            name = importlib.util.resolve_name(name, None) # type: ignore
         except Exception as e:
-            error = "".join(format_exception(e, e, e.__traceback__))
-            log.error(f"Could not resolve extension name\n{error}")
-            return
+            raise e
 
-        spec = importlib.util.find_spec(name)
+        spec = importlib.util.find_spec(name) # type: ignore
 
-        lib = importlib.util.module_from_spec(spec)
+        lib = importlib.util.module_from_spec(spec) # type: ignore
 
         try:
             spec.loader.exec_module(lib)
@@ -416,9 +410,7 @@ class Bot:
         try:
             ext = getattr(lib, "Ext")
         except Exception as e:
-            error = "".join(format_exception(e, e, e.__traceback__))
-            log.error(f"Extension does not exist\n{error}")
-            return
+            raise e
 
         # Creates an Extension - ext in this case refers to the Ext class used for initialisation
         ext = Extension(
@@ -434,59 +426,25 @@ class Bot:
                     self._events[name].append(
                         Event(name=name, coro=ext_event.coro, ext=ext.ext)
                     )
-            if self.debug:
-                log.debug("Loaded Extension")
-                log.info(f"Loaded Extension {ext.name} to Bot")
 
         except Exception as e:
-            error = "".join(format_exception(e, e, e.__traceback__))
-            log.error(f"Failed to load extension events\n{error}")
-            return
+            raise e
 
     async def logout(self):
         await self.gateway.close()
 
-    async def trigger_slash(
-        self,
-        command: SlashCommand,
-        channel_id: str,
-        bot_id: str,
-        value: list[str | None] | None = None,
-        option: list[Option] | None = None,
-        guild_id: str | None = None,
-    ):
-        interaction = InteractionUtil(self, self.http)
-        await interaction.trigger_slash(
-            command, channel_id, bot_id, value, option, guild_id
-        )
-
-    async def interaction_search(
-        self,
-        query: str,
-        channel_id: str,
-        type: int = 1,
-        cursor: str = None,
-        bot_id: str = None,
-        command_id: str = None,
-    ) -> Search:
-        """Search for interactions within a specific guild channel, you can specify certain parameters
+    async def process_commands(self, msg):
+        """
+        What is called in order to actually get command input and run commands
 
         Args:
-            query (str): Query to search for
-            channel_id (str): Channel ID to search within
-            type (int): Type of command to search for
-            bot_id (str): Specify what bot specifically to search for
-            command_id (str): Specify a command id to search for, to view options
-
-        Returns:
-            Search object
+            msg (str): The message containing command
         """
-        interaction = InteractionUtil(self, self.http)
-        return await interaction.interaction_search(
-            query, channel_id, type, cursor, bot_id, command_id
-        )
+        context = Context(msg, self)
+
+        asyncio.create_task(context.invoke())
     
-    def get_message(self, message_id: str):
+    def fetch_message(self, message_id: str):
         """
         Function to help retrieve messages from bot cache
 
@@ -496,63 +454,23 @@ class Bot:
         Returns:
             Message: The Message object
         """
-        for message in self.user.messages:
-            if message.id == message_id:
-                return message
+        
 
-    def get_channel(self, channel_id: str):
-        """
-        Function to help retrieve channel from bot cache
+    def fetch_user(self, user_id: str) -> Optional[User]:
+        return self.cached_users.get(user_id)
 
-        Args:
-            channel_id (str): The channel id to search for
+    def fetch_channel(self, channel_id: str) -> Optional[Messageable]:
+        return self.cached_channels.get(channel_id)
 
-        Returns:
-            Channel: The Channel object
-        """
-        for channel in self.user.private_channels:
-            if channel_id == channel.id:
-                return channel
-        for guild in self.user.guilds:
-            for channel in guild.channels:
-                if channel_id == channel.id:
-                    return channel
-
-    def get_guild(self, guild_id: str):
-        """
-        Function to help retrieve guild from bot cache
-
-        Args:
-            guild_id (str): The guild id to search for
-
-        Returns:
-            Guild: The Guild object
-        """
+    # Cry it's O(N) - max 100 guilds so it's cool
+    def fetch_guild(self, guild_id: str) -> Optional[Guild]:
         for guild in self.user.guilds:
             if guild.id == guild_id:
                 return guild
-
-    def fetch_user(self, user_id: str) -> User | None:
-        for user in self.user.friends:
-            if user.id == user_id:
-                return user
-        for guild in self.user.guilds:
-            for user in guild.members:
-                if user.id == user_id:
-                    return user
-        for channel in self.user.private_channels:
-            if isinstance(channel, DMChannel):
-                if channel.recipient.id == user_id:
-                    return channel.recipient
-            if isinstance(channel, GroupChannel):
-                for user in channel.recipients:
-                    if user.id == user_id:
-                        return user
-        else:
-            return None
+        return
 
 
-    async def get_user(self, user_id: str) -> User:
+    async def get_user(self, user_id: str) -> Optional[User]:
         """
         Function to retrieve user data. Probably need to be friends with them to retrieve the details.
 
@@ -565,275 +483,8 @@ class Bot:
         """
 
         data = await self.http.request(method="get", endpoint=f"/users/{user_id}")
+        if data is not None:
+            return User(data, bot=self)
+        return
 
-        return User(data, bot=self, http=self.http)
-
-    async def create_guild(
-        self, name: str, icon_url: str = None, template: str = "2TffvPucqHkN"
-    ):
-        """Creates a guild"""
-        image = None if icon_url is None else await self.http.encode_image(icon_url)
-        json = await self.http.request(
-            method="post",
-            endpoint="/guilds",
-            headers={
-                "origin": "https://discord.com",
-                "referer": "https://discord.com/channels/@me",
-            },
-            json={"name": name, "icon": image, "template": template},
-        )
-        if self.debug:
-            log.debug("Finished Creating Guild")
-            log.info(
-                f"Created Guild NAME: {name} TEMPLATE: {template} ICON: {icon_url}"
-            )
-        return Guild(json, self, self.http)
-
-    async def change_pass(self, old_pass, new_pass):
-        """
-        Method to change password.
-
-        Args:
-            old_pass: Your old password.
-            new_pass: Password you want to change to.
-        """
-        await self.http.request("patch", "/users/@me", json={"password": old_pass, "new_password": new_pass})
-    
-    async def get_sessions(self) -> list[Session] | None:
-        data = await self.http.request("get", "/auth/sessions")
-        if data.get("user_sessions") is not None:
-            return [Session(data, self, self.http) for data in data["user_sessions"]]
-    
-
-    async def reset_relationship(self, user_id: str):
-        """
-        Function remove a specific user from friends or unblocks a user
-
-        Args:
-            user_id (str) : user to remove
-        """
-        await self.http.request("delete", f"/users/@me/relationships/{user_id}")
-
-    async def block(self, user_id: str):
-        """
-        Function to block a user
-        
-        Args:
-            user_id (str) : user to block
-        """
-        await self.http.request("put", f"/users/@me/relationships/{user_id}", json={"type": 2})
-
-    async def add_friend(self, user_id: str):
-        """
-        Function to add a specific user as a friend.
-
-        Args:
-            user_id (str): ID of the possible random user.
-
-        Returns:
-            No return value.
-        """
-
-        await self.http.request(
-            method="put",
-            endpoint=f"/users/@me/relationships/{user_id}",
-            headers={
-                "origin": "https://discord.com",
-                "referer": f"https://discord.com/channels/@me/{random.choice(self.user.private_channels).id}",
-            },
-            json={},
-        )
-        if self.debug:
-            log.debug("Sent Friend request")
-            log.info(f"Sent Friend request to {user_id}")
-
-    async def edit_profile(self, bio: str = None, accent: int = None):
-        """Edits user profile"""
-        fields = {}
-        if bio != None:
-            fields["bio"] = bio
-        if accent != None:
-            fields["accent"] = accent
-        await self.http.request(
-            method="patch", endpoint="/users/@me/profile", json=fields
-        )
-        if self.debug:
-            log.debug("Finished Edit profile")
-
-    async def change_pfp(self, avatar_url=None):
-        """Disclaimer: This may phone lock your account :(
-
-        Args:
-            avatar_url (str): URL of image
-
-        Raises:
-            TypeError: URL not specified
-        """
-        if avatar_url != None:
-            image = await self.http.encode_image(avatar_url)
-            await self.http.request(
-                method="patch",
-                endpoint="/users/@me",
-                headers={
-                    "origin": "https://discord.com",
-                    "referer": "https://discord.com/channels/@me",
-                },
-                json={"avatar": image},
-            )
-        else:
-            log.error("Avatar URL not specified")
-        if self.debug:
-            log.debug("Finished changing avatar")
-
-    async def create_dm(self, recipient_id: int):
-        """
-        Function to create new DM Channel with other user. Can be used with bots too.
-
-        Args:
-            recipient_id (snowflake): ID of recipient - Has to be user or bot ID
-
-        Raises:
-            TypeError: Recipient ID not specified
-
-        Returns:
-            DMChannel object
-        """
-        if recipient_id is not None:
-            data = await self.http.request(
-                method="post",
-                endpoint="/users/@me/channels",
-                json={"recipient_id": recipient_id},
-            )
-            if self.debug:
-                log.debug("Created DM Channel")
-            return DMChannel(data, bot=self, http=self.http)
-        else:
-            log.error("Recipient ID not specified")
-
-    async def join_invite(self, code: str) -> Guild | None:
-        """Helper function to join invites
-        
-        Args:
-            code (str): Invite Code
-        Returns:
-            Guild object | None
-        """
-        data = await self.http.request("post", f"/invites/{code}", json = {
-            "session_id": f"{self.session_id}"
-        }
-        )
-        try:
-            return Guild(data['guild'], self, self.http)
-        except:
-            return GroupChannel(data['channel'], self, self.http)
-    async def redeem_nitro(self, code: str):
-        """Helper function to redeem nitro
-
-        Args:
-            code (str): Nitro code
-        """
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"https://canary.discord.com/api/v9/entitlements/gift-codes/{code}/redeem",
-                headers={
-                    "authorization": f"{self.token}",
-                    "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
-                    "content-type": "application/json",
-                },
-                json={},
-            ) as resp:
-                j = await resp.json()
-                log.info(f"Status: {resp.status} Nitro Redeem response: {j}")
-
-    async def change_hypesquad(self, house: "str"):
-        """Helper function to change hypesquad
-
-        Args:
-            house (str): Hypesquad name
-        """
-        if house.lower() == "bravery":
-            await self.http.request(
-                method="post", endpoint="/hypesquad/online", json={"house_id": 1}
-            )
-        if house.lower() == "brilliance":
-            await self.http.request(
-                method="post", endpoint="/hypesquad/online", json={"house_id": 2}
-            )
-        if house.lower() == "balance":
-            await self.http.request(
-                method="post", endpoint="/hypesquad/online", json={"house_id": 3}
-            )
-        if self.debug:
-            log.debug("Finished changing hypesquad")
-            log.info(f"Changed hypesquad to {house}")
-
-    async def change_presence(self, status: str, afk: bool, activity: dict):
-        """Change discord activity presence
-
-        Args:
-            status (str): Online, Offline, Dnd, Invisible
-            afk (bool): True or False
-            activity (dict): Selfcord.Activity method.
-        """
-        await self.gateway.change_presence(status, afk, activity=activity)
-        if self.debug:
-            log.debug("Finished changing presence")
-            log.info(f"Changed Status to {status}, AFK to {afk}")
-
-    async def change_status(self, status: str, message: str | None = None, emoji: str | None = None):
-        """
-        Change status for yourself
-
-        Args:
-            status (str) : online, offline, dnd, invisible
-            message (str | None) : message for custom status
-            emoji (str | None) : emoji for custom status
-        """
-        json = {"status": status}
-        if message is not None:
-            if "custom_status" in json:
-                json['custom_status'].update({"text": message})
-            else:
-                json['custom_status'] = {"text": message}
-        if emoji is not None:
-            emoji = emoji.encode("utf-8").decode("utf-8")
-            if "custom_status" in json:
-                json['custom_status'].update({"emoji_name": emoji})
-            else:
-                json['custom_status'] = {"emoji_name": emoji}
-
-        await self.http.request("patch", "/users/@me/settings", json=json)
-
-    async def friend_invite(self):
-        """Get discord friend invite for specified ID"""
-        json = await self.http.request("post", "/users/@me/invites", json={"max_age":0,"max_uses":0,"target_type":None, "flags":0})
-        return json['code']
-
-    async def view_invites(self):
-        """View discord friend invites"""
-        json = await self.http.request("get", "/users/@me/invites")
-        invites = []
-        for items in json:
-            invite = {}
-            for key, value in items.items():
-                if key == "code":
-                    invite['code'] = value
-                if key == "expires_at":
-                    invite['expiry'] = value
-            if invite.get("code") is not None and invite.get("expiry") is not None:
-                invites.append(invite)
-        return invites
-
-    async def change_password(self, new_password: str):
-        json = await self.http.request("patch", "/users/@me", json={"password": self.password,"new_password": new_password})
-
-        self.token = json['token']
-
-    async def change_username(self, new_name: str):
-        await self.http.request("patch", "/users/@me", json={"username":new_name, "password": self.password})
-
-    async def create_app(self, name: str, team_id: int = None):
-        # I don't know what type team id is supposed to be but imma assume its an integer
-        data = await self.http.request("post", "/applications", json={"name": name, "team_id": team_id})
-        
-        return Application(data, self.http)
+ 

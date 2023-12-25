@@ -14,6 +14,14 @@ base = "https://discord.com/api/v9"
 # So basically guys my epic OOP magic didn't work this is indeed fucked
 # Time to copy and paste everything! Actually methods should be fine, attrs for some reason don't wanna work
 
+class Status:
+    def __init__(self, payload: dict):
+        self.update(payload)
+
+    def update(self, payload: dict):
+        self.platforms = payload.keys()
+        self.status = payload.values()
+
 
 class User:
     def __init__(self, payload: dict, bot: Bot):
@@ -21,11 +29,22 @@ class User:
         self.http = bot.http
         self.update(payload)
 
+    def _remove_null(self, payload: dict):
+        return {key: value for key, value in payload.items() if value is not None}
+
     def update(self, payload: dict):
-        self.name: Optional[str] = payload.get("username")
+        self.username: Optional[str] = payload.get("username")
+        self.status: Optional[str] = payload.get("status")
+        self.client_status: Optional[Status] = (
+            Status(payload['client_status']) 
+            if payload.get("client_status") is not None
+            else None
+        )
+        self.broadcast = payload.get("broadcast")
+        self.activities = payload.get("activities")
         self.id: Optional[str] = payload.get("id")  # USER ID STAYS STRING
         self.discriminator: Optional[str] = payload.get("discriminator")
-
+        self.global_name: Optional[str] = payload.get("global_name")
         self.avatar: Optional[Asset] = (
             Asset(self.id, payload["avatar"]).from_avatar()
             if payload.get("avatar") is not None and self.id is not None
@@ -42,6 +61,31 @@ class User:
         self.flags: int = payload.get("flags", 0)
         self.avatar_decoration: Optional[str] = payload.get("avatar_decoration")
         self.is_bot = payload.get("bot", False)
+
+    def partial_update(self, payload: dict):
+        for key, value in payload.items():
+            if hasattr(self, key):
+                if key == "banner":
+                    setattr(self, key, (
+                        Asset(self.id, payload["banner"]).from_avatar()
+                        if payload.get("banner") is not None and self.id is not None
+                        else None
+                    ))
+                elif key == "avatar":
+                    setattr(self, key, (
+                        Asset(self.id, payload["banner"]).from_avatar()
+                        if payload.get("banner") is not None and self.id is not None
+                        else None
+                    ))
+                elif key == "client_status":
+                    setattr(self, key, (
+                        Status(payload['client_status']) 
+                        if payload.get("client_status") is not None
+                        else None
+                    ))
+
+                else:
+                    setattr(self, key, value)
 
 
     async def friend(self):
@@ -91,6 +135,12 @@ class Client(User):
         self.desktop = payload.get("desktop")
         self.mfa = payload.get("mfa_enabled")
 
+    def partial_update(self, payload: dict):
+        payload = self._remove_null(payload)
+        super().partial_update(payload)
+        for key, value in payload.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
 class Member(User):
     def __init__(self, payload: dict, bot: Bot):
@@ -100,3 +150,13 @@ class Member(User):
         self.permissions = 0  # TODO: Create Permission class
         super().__init__(payload, bot)
         super().update(payload)
+
+    def partial_update(self, payload: dict):
+        payload = self._remove_null(payload)
+        super().partial_update(payload)
+        for key, value in payload.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+
+

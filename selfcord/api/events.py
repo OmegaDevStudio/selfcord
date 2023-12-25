@@ -32,7 +32,7 @@ class Handler:
                     user = User(user, self.bot)
                     self.bot.cached_users[user.id] = user
                 else:
-                    check_user.update(user)
+                    check_user.partial_update(user)
             if relation is not None:
                 check_user = self.bot.fetch_user(relation["id"])
                 if check_user is None:
@@ -43,12 +43,33 @@ class Handler:
                     if relation["type"] == 2:
                         self.bot.user.blocked.append(user)
                 else:
-                    check_user.update(user)
+                    check_user.partial_update(user)
         await self.bot.emit("ready")
 
 
     async def handle_ready_supplemental(self, data: dict):
-        await aprint(data)
+        for guild in data['guilds']:
+            for user in guild:
+                check_user = self.bot.fetch_user(user['id'])
+                if check_user is None:
+                    user = User(user, self.bot)
+                    self.bot.cached_users[user.id] = user
+                else:
+                    check_user.partial_update(user)
+        for friend in data['friends']:
+            check_user = self.bot.fetch_user(friend['id'])
+            if check_user is None:
+                user = User(friend, self.bot)
+                self.bot.cached_users[user.id] = user
+            else:
+                check_user.partial_update(friend)
+        for guild in data['merged_members']:
+            for member in guild:
+                check_user = self.bot.fetch_user(friend['id'])
+                if check_user is None:
+                    user = User(member, self.bot)
+                    self.bot.cached_users[user.id] = user
+                    
         pass
 
     async def handle_message_create(self, data: dict):

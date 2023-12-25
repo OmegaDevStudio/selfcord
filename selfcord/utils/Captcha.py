@@ -4,9 +4,9 @@ from twocaptcha import TwoCaptcha
 # Use https://2captcha.com/?from=15127673
 class CaptchaSolver:
     def __init__(self, api_key: str,
-                 site_key: str = "4c672d35-0701-42b2-88c3-78380b0db560",
-                 site_url: str = "discord.com"
-                 ):
+        site_key: str = "4c672d35-0701-42b2-88c3-78380b0db560",
+        site_url: str = "discord.com"
+    ):
         self.two_captcha = TwoCaptcha(apiKey=api_key)
         self.site_key = site_key
         self.site_url = site_url

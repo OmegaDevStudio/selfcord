@@ -22,7 +22,6 @@ class Messageable:
         self.type: int
 
     def update(self, payload):
-        print("this is ran")
         self.id: str = payload["id"]
         self.type: int = int(payload["type"])
         self.flags = payload.get("flags")
@@ -77,8 +76,6 @@ class GroupChannel(Messageable):
         self.bot = bot
         self.http = bot.http
         self.update(payload)
-
-        print("in group channel")
 
     def update(self, payload: dict):
         self.recipient: list[Optional[User]] = (

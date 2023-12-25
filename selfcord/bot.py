@@ -33,7 +33,14 @@ from .utils import (
     ExtensionCollection, logging
 )
 from .utils.logging import handler
+import sys
 
+if sys.platform == "linux":
+    import uvloop
+    uvloop.install()
+if sys.platform == "windows":
+    import winloop
+    winloop.install()
 
 
 log = logging.getLogger(__name__)

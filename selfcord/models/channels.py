@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ..api import DiscordHttp
 
 
-BASE = "https://discord.com/api/v9"
+
 
 
 class Messageable:
@@ -33,19 +33,33 @@ class Messageable:
 
     async def send(
         self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
-    ):
+    ) -> Optional[Messageable]:
         if self.type in (1, 3):
             headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
         else:
             headers = {
                 "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
             }
-        await self.http.request(
+        json = await self.http.request(
             "POST",
             f"/channels/{self.id}/messages",
             headers=headers,
             json={"content": content, "flags": 0, "tts": tts, "nonce": self.nonce},
         )
+        if json is not None:
+            return Convert(json, self.bot)
+
+    async def delete(self) -> Optional[Messageable]:
+        if self.type in (1,3):
+            json = await self.http.request(
+                "DELETE", f"/channels/{self.id}?silent=false",
+                headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
+            )
+        else:
+            json = await self.http.request(
+                "DELETE", f"/channels/{self.id}",
+                headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
+            )
 
 
 class DMChannel(Messageable):
@@ -61,11 +75,6 @@ class DMChannel(Messageable):
             payload["recipient_ids"][0] if payload.get("recipient_ids") is not None else ""
         )
         self.is_spam: Optional[bool] = payload.get("is_spam")
-
-    async def delete(self):
-        await self.http.request(
-            "delete", BASE + "/channels/" + self.id + "?silent=false"
-        )
 
 
 

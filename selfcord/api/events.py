@@ -184,6 +184,7 @@ class Handler:
         del guild
 
     async def handle_guild_member_list_update(self, data: dict):
+        print(data)
         pass
 
     async def handle_thread_list_sync(self, data: dict):

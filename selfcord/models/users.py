@@ -7,8 +7,6 @@ if TYPE_CHECKING:
     from ..bot import Bot
 
 
-base = "https://discord.com/api/v9"
-
 # Realise this might be fucked because my subclassism didn't work with channels
 # So basically guys my epic OOP magic didn't work this is indeed fucked
 # Time to copy and paste everything! Actually methods should be fine, attrs for some reason don't wanna work
@@ -91,23 +89,24 @@ class User:
 
 
     async def friend(self):
-        await self.http.request(
-            "put", base + "/users/@me/relationships/" + self.id if self.id is not None else "", json={}
+        json = await self.http.request(
+            "put", "/users/@me/relationships/" + self.id if self.id is not None else "", json={}
         )
-
+        return User(json, self.bot)
+    
     async def block(self):
         await self.http.request(
-            "put", base + "/users/@me/relationships/" + self.id if self.id is not None else "", json={"type": 2}
+            "put", "/users/@me/relationships/" + self.id if self.id is not None else "", json={"type": 2}
         )
 
     async def reset_relationship(self):
         await self.http.request(
-            "delete", base + "/users/@me/relationships/" + self.id if self.id is not None else "", json={}
+            "delete", "/users/@me/relationships/" + self.id if self.id is not None else "", json={}
         )
 
     async def create_dm(self) -> Optional[DMChannel]:
         json = await self.http.request(
-            "post", base + "/channels", json={"recipients": [self.id if self.id is not None else ""]}
+            "post", "/channels", json={"recipients": [self.id if self.id is not None else ""]}
         )
 
         return DMChannel(json, self.bot) or None

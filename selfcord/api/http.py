@@ -181,7 +181,7 @@ class HttpClient:
                             log.error(f"Unable to log response: \n{error}")
                             await aprint(error)
                             return None
-        try:
+        try: 
             if resp.headers["set-cookie"]:
                 dcf = resp.headers["set-cookie"].split("__dcfduid=")[0].split(";")[0]
                 sdc = resp.headers["set-cookie"].split("__sdcfduid=")[0].split(";")[0]

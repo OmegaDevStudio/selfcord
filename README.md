@@ -14,6 +14,9 @@
 </a>
 </div>
 
+## NOTE
+This is the rewrite repository and is currently not pushed to PyPI. I'm going to try get selfcord to it's previous working state or better before pushing to PyPI. Contribution welcome.
+
 ## Feautres
  - Modern Pythonic API using `async`/`await` syntax
  - Easy to use with an object oriented design

@@ -10,7 +10,7 @@ import ujson
 if TYPE_CHECKING:
     from ..bot import Bot
     from websockets import Connect
-    from ..models import Capabilities
+    from ..models import Capabilities, Guild, Messageable
 
 
 class Gateway:
@@ -165,6 +165,50 @@ class Gateway:
     def heartbeat_ack(self):
         self.last_ack = time.perf_counter()
         self.latency = self.last_ack - self.last_send
+
+    def roundup(self, n):
+        import math
+        return int(math.ceil(n / 100.0)) * 100
+    
+    def chunks(self, lst, n):
+        for i in range(0, len(lst), 1):
+            if len(lst[: i + 1]) > 3:
+                for i in range(i, len(lst), n):
+                    yield lst[i : i + n]
+                break
+            yield lst[: i + 1]
+
+    async def chunk_members(self, guild: Guild, channels: list[Messageable]):
+        if len(channels) > 5:
+            raise ValueError("Max 5 channels")
+        
+        ranges = []
+
+        if guild.member_count is not None:
+            for i in range(0, guild.member_count, 100):
+                ranges.append(
+                    [i, self.roundup(i + (guild.member_count - i)) - 1]
+                ) if i + 99 > guild.member_count else ranges.append([i, i + 99])
+            
+        for item in self.chunks(ranges, 3):
+
+            queries = {}
+            payload = {
+                "op": 14,
+                "d": {
+                    "guild_id": guild.id,
+                }
+            }
+            data = payload['d']
+
+            for channel in channels:
+                queries[channel.id] = item
+
+            data['channel'] = queries
+            
+            await self.send_json(payload)
+            await asyncio.sleep(2.0)
+        
 
     async def call(self, channel: str, guild: Optional[str] = None):
         payload = {

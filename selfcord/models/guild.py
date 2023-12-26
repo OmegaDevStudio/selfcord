@@ -179,6 +179,13 @@ class Guild:
                 else:
                     setattr(self, key, value)
 
+    async def get_members(self, channels: list[str]):
+        await self.bot.gateway.send_json(
+            {
+                ""
+            }
+        )
+
 class Emoji:
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot

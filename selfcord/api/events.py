@@ -173,18 +173,15 @@ class Handler:
     async def handle_thread_delete(self, data: dict):
         pass
 
-    async def handle_server_create(self, data: dict):
-        pass
-        # we gotta do some research on this one
-        # No literally just do print(data) and run the event loop it will show you the data
+    async def handle_guild_create(self, data: dict):
+        guild = Guild(data, self.bot)
+        self.bot.user.guilds.append(guild)
+        self.bot.emit("guild_create")
 
-    async def handle_server_delete(self, data: dict):
-        pass
-
-    # do you think we should do something with presences too?
-    # yesser, somehow we will connect User/Member with status/presence
-    async def hand_channel_create(self, data: dict):
-        self.bot.cached_channels[data["id"]] = Convert(data, self.bot)
+    async def handle_guild_delete(self, data: dict):
+        guild = self.bot.fetch_guild(data['id'])
+        await self.bot.emit("guild_delete", guild)
+        del guild
 
     async def handle_guild_member_list_update(self, data: dict):
         pass

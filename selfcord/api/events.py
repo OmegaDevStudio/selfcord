@@ -147,9 +147,25 @@ class Handler:
         deleted_message = self.bot.fetch_message(data['id'])
         await self.bot.emit("message_delete", deleted_message)
 
+    async def handle_channel_create(self, data: dict):
+
+        channel = Convert(data, self.bot)
+        self.bot.cached_channels[channel.id] = channel
+
+        if hasattr(channel, "guild_id"):
+            print("guild", channel.id)
+            guild = self.bot.fetch_guild(channel.guild_id)
+            guild.channels.append(channel)
+        else:
+            print("priv", channel.id)
+            self.bot.user.private_channels.append(channel)
+
+        await self.bot.emit("channel_create", channel)
 
     async def handle_channel_delete(self, data: dict):
-        pass
+        deleted_channel = self.bot.fetch_channel(data['id'])
+        await self.bot.emit("channel_delete", deleted_channel)
+        del deleted_channel
 
     async def handle_thread_create(self, data: dict):
         pass

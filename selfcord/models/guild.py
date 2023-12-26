@@ -21,6 +21,7 @@ class Guild:
         self.stickers: list[Sticker] = []
         self.roles: list[Role] = []
         # MUH OPTIMISATIONS: Zip Longest very cool bro
+        self.id: Optional[str] = payload.get("id")
         for emoji, sticker, role, channel, member in itertools.zip_longest(
             payload.get("emojis", []),
             payload.get("stickers", []),
@@ -56,7 +57,7 @@ class Guild:
         self.joined_at = payload.get("joined_at")
         properties: Optional[dict] = payload.get("properties")
         if properties:
-            self.id: str = properties["id"]
+            self.id: Optional[str] = properties.get("id")
             self.owner_id: Optional[str] = (
                 properties["owner_id"]
                 if properties.get("owner_id") is not None

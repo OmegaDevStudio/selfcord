@@ -58,7 +58,7 @@ class DMChannel(Messageable):
 
     def update(self, payload: dict):
         self.recipient: Optional[User] = self.bot.fetch_user(
-            payload["recipients"][0] if payload.get("recipients") is not None else ""
+            payload["recipient_ids"][0] if payload.get("recipient_ids") is not None else ""
         )
         self.is_spam: Optional[bool] = payload.get("is_spam")
 
@@ -79,8 +79,8 @@ class GroupChannel(Messageable):
 
     def update(self, payload: dict):
         self.recipient: list[Optional[User]] = (
-            [self.bot.fetch_user(user) for user in payload["recipients"]]
-            if payload.get("recipients") is not None
+            [self.bot.fetch_user(user) for user in payload["recipient_ids"]]
+            if payload.get("recipient_ids") is not None
             else []
         )
         self.is_spam: Optional[bool] = payload.get("is_spam")

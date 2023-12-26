@@ -86,7 +86,7 @@ class Handler:
                         self.bot.cached_users[member.id] = member
                     else:
                         check_user.partial_update(member)
-
+            # DISCORD BAD
             if guild is not None:
                 guilds: list = data.get("guilds", [])
                 index = guilds.index(guild)
@@ -102,6 +102,7 @@ class Handler:
                     check_guild.partial_update(guild)
                     check_guild.members.append(temp_members[str(index)])
 
+        # DISCORD BAD
         merged_presences = data.get("merged_presences", {})
         guilds = merged_presences.get("guilds")
         for index, users in enumerate(guilds):
@@ -123,7 +124,7 @@ class Handler:
             else:
                 check_user.partial_update(user)
 
-
+        # DISCORD BAD x100000
         for index, indexed_guild in temp_guilds.items():
             members = temp_members[str(index)]
             guild = self.bot.fetch_guild(indexed_guild[0]['id'])
@@ -137,9 +138,14 @@ class Handler:
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
         await self.bot.process_commands(message)
+        await self.bot.emit("message", message)
 
     async def handle_message_delete(self, data: dict):
-        pass
+        # Was thinking of maybe removing it from cache
+        # But I think would be more useful to keep it
+        # This can return None if there is no valid message in cache
+        deleted_message = self.bot.fetch_message(data['id'])
+        await self.bot.emit("message_delete", deleted_message)
 
 
     async def handle_channel_delete(self, data: dict):
@@ -147,7 +153,6 @@ class Handler:
 
     async def handle_thread_create(self, data: dict):
         pass
-        # cache[data['id']] = PublicThread(data)
 
     async def handle_thread_delete(self, data: dict):
         pass
@@ -166,10 +171,10 @@ class Handler:
         self.bot.cached_channels[data["id"]] = Convert(data, self.bot)
 
     async def handle_guild_member_list_update(self, data: dict):
-        print(data, "guild_member_list")
+        pass
 
     async def handle_thread_list_sync(self, data: dict):
-        print(data, "thread_list_sync")
+        pass
 
     async def handle_guild_member_chunk(self, data: dict):
-        print(data, "guild_member_chunk")
+        pass

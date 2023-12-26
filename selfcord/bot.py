@@ -443,17 +443,8 @@ class Bot:
 
         asyncio.create_task(context.invoke())
     
-    def fetch_message(self, message_id: str):
-        """
-        Function to help retrieve messages from bot cache
-
-        Args:
-            message_id (str): The message id to search for
-
-        Returns:
-            Message: The Message object
-        """
-        
+    def fetch_message(self, message_id: str) -> Optional[Message]:
+        return self.cached_messages.get(message_id)
 
     def fetch_user(self, user_id: str) -> Optional[User]:
         return self.cached_users.get(user_id)

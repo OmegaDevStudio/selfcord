@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from .assets import Asset
-from .guild import Guild, Role
 from .channels import DMChannel, Messageable
 
 if TYPE_CHECKING:
@@ -42,7 +41,7 @@ class User:
         )
         self.broadcast = payload.get("broadcast")
         self.activities = payload.get("activities")
-        self.id: Optional[str] = payload.get("id")  # USER ID STAYS STRING
+        self.id: Optional[str] = payload.get("id")  or payload.get("user_id")
         self.discriminator: Optional[str] = payload.get("discriminator")
         self.global_name: Optional[str] = payload.get("global_name")
         self.avatar: Optional[Asset] = (
@@ -61,6 +60,7 @@ class User:
         self.flags: int = payload.get("flags", 0)
         self.avatar_decoration: Optional[str] = payload.get("avatar_decoration")
         self.is_bot = payload.get("bot", False)
+        self.premium_since = payload.get("premium_since")
 
     def partial_update(self, payload: dict):
         for key, value in payload.items():
@@ -83,6 +83,8 @@ class User:
                         if payload.get("client_status") is not None
                         else None
                     ))
+                elif key == "bot":
+                    setattr(self, "is_bot", value)
 
                 else:
                     setattr(self, key, value)
@@ -146,10 +148,12 @@ class Member(User):
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
         self.http = bot.http
-        self.roles: list[Role] = []
-        self.permissions = 0  # TODO: Create Permission class
         super().__init__(payload, bot)
         super().update(payload)
+
+    def update(self, payload: dict):
+        self.roles: list[Role] = []
+        self.permissions = 0  # TODO: Create Permission class
 
     def partial_update(self, payload: dict):
         payload = self._remove_null(payload)

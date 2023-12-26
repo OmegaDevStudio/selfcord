@@ -2,7 +2,8 @@ from __future__ import annotations
 import itertools
 from typing import TYPE_CHECKING, Optional
 from .assets import Asset
-from .channels import Convert
+from .channels import Convert, Messageable
+from .users import Member
 if TYPE_CHECKING:
     from ..bot import Bot
 
@@ -14,16 +15,18 @@ class Guild:
         self.update(payload)
 
     def update(self, payload: dict):
-        self.channels: list[Channel] = []
+        self.members: list[Member] = []
+        self.channels: list[Messageable] = []
         self.emojis: list[Emoji] = []
         self.stickers: list[Sticker] = []
         self.roles: list[Role] = []
         # MUH OPTIMISATIONS: Zip Longest very cool bro
-        for emoji, sticker, role, channel in itertools.zip_longest(
-            payload["emojis"] if payload.get("emojis") is not None else [],
-            payload["stickers"] if payload.get("stickers") is not None else [],
-            payload["roles"] if payload.get("roles") is not None else [],
-            payload["channels"] if payload.get("channels") is not None else [],
+        for emoji, sticker, role, channel, member in itertools.zip_longest(
+            payload.get("emojis", []),
+            payload.get("stickers", []),
+            payload.get("roles", []),
+            payload.get("channels", []),
+            payload.get("members", [])
         ):
             if emoji is not None:
                 self.emojis.append(Emoji(emoji, self.bot))
@@ -37,10 +40,17 @@ class Guild:
             if channel is not None:
                 chan = Convert(channel, self.bot)
                 self.channels.append(chan)
-                if self.bot.user:
-                    self.bot.cached_channels[chan.id] = chan
+             
+                self.bot.cached_channels[chan.id] = chan
+
+            if member is not None:
+                member = Member(member, self.bot)
+                self.members.append(member)
+                self.bot.cached_users[member.id] = member
 
         self.member_count = payload.get("member_count")
+        self.embedded_activities = payload.get("embedded_activities", [])
+        self.voice_states = payload.get("voice_state", [])
         self.lazy = payload.get("lazy")
         self.large = payload.get("large")
         self.joined_at = payload.get("joined_at")
@@ -124,19 +134,49 @@ class Guild:
             self.features: Optional[list[str]] = properties.get("features")
             self.max_members: Optional[int] = properties.get("max_members")
             self.name: Optional[str] = properties.get("name")
-            self.safety_alerts_channel_id: Optional[int] = properties.get(
-                "safety_alerts_channel_id"
-            )
-            self.premium_progress_bar_enabled: Optional[bool] = properties.get(
-                "premium_progress_bar_enabled"
-            )
-            self.verification_level: Optional[int] = properties.get(
-                "verification_level"
-            )
+            self.safety_alerts_channel_id: Optional[int] = properties.get("safety_alerts_channel_id")
+            self.premium_progress_bar_enabled: Optional[bool] = properties.get("premium_progress_bar_enabled")
+            self.verification_level: Optional[int] = properties.get("verification_level")
             self.home_header: Optional[str] = properties.get("home_header")
-            self.vanity_url_code: Optional[str] = properties.get(
-                "vanity_url_code")
+            self.vanity_url_code: Optional[str] = properties.get("vanity_url_code")
 
+    def partial_update(self, payload: dict):
+        for key, value in payload.items():
+            if hasattr(self, key):
+                if key == "properties":
+                    for key, value in payload.items():
+                        if key == "banner":
+                            setattr(self, key, (
+                                Asset(self.id, payload["banner"]).from_avatar()
+                                if payload.get("banner") is not None and self.id is not None
+                                else None
+                            ))
+                        elif key == "icon":
+                            setattr(self, key, (
+                                Asset(self.id, payload["banner"]).from_avatar()
+                                if payload.get("banner") is not None and self.id is not None
+                                else None
+                            ))
+                        elif key == "bot":
+                            setattr(self, "is_bot", value)
+
+                if key == "banner":
+                    setattr(self, key, (
+                        Asset(self.id, payload["banner"]).from_avatar()
+                        if payload.get("banner") is not None and self.id is not None
+                        else None
+                    ))
+                elif key == "icon":
+                    setattr(self, key, (
+                        Asset(self.id, payload["banner"]).from_avatar()
+                        if payload.get("banner") is not None and self.id is not None
+                        else None
+                    ))
+                elif key == "bot":
+                    setattr(self, "is_bot", value)
+
+                else:
+                    setattr(self, key, value)
 
 class Emoji:
     def __init__(self, payload: dict, bot: Bot):

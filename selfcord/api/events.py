@@ -1,6 +1,7 @@
 import itertools
+from time import perf_counter
 from aioconsole import aprint
-from ..models import Guild, Convert, User, Message
+from ..models import Guild, Convert, User, Message, Member
 
 
 class Handler:
@@ -8,12 +9,13 @@ class Handler:
         self.bot = bot
 
     async def handle_ready(self, data: dict):
+        self._ready_data = data
         guilds = data.get("guilds", [])
         private_channels = data.get("private_channels", [])
         users = data.get("users", [])
         relationships = data.get("relationship", [])
         merged_members = data.get("merged_members", [])
-        # LOOK AT ALL THIS OPTIMISATION
+
         for guild, channel, user, relation in itertools.zip_longest(
             guilds,
             private_channels,
@@ -44,33 +46,92 @@ class Handler:
                         self.bot.user.blocked.append(user)
                 else:
                     check_user.partial_update(user)
-        await self.bot.emit("ready")
+
+        await self.bot.emit("ready", perf_counter() - self.bot.startup)
 
 
     async def handle_ready_supplemental(self, data: dict):
-        for guild in data['guilds']:
-            for user in guild:
-                check_user = self.bot.fetch_user(user['id'])
+        # Ok discord bad code
+        # I have to use data from ready and this event to properly form payloads
+        # Discord Bad CODE
+
+        temp_members = {}
+        temp_guilds = {}
+
+        for guild, members, extra_members in itertools.zip_longest(
+            data.get("guilds", []),
+            self._ready_data.get("merged_members", []),
+            data.get("merged_members", {}),
+        ):
+            if members is not None:
+                index = self._ready_data.get("merged_members", []).index(members)
+                temp_members.setdefault(str(index), []).extend(members)
+
+                for member in members:
+                    check_user = self.bot.fetch_user(member['user_id'])
+                    if check_user is None:
+                        member = Member(member, self.bot)
+                        self.bot.cached_users[member.id] = member
+                    else:
+                        check_user.partial_update(member)
+            
+            if extra_members is not None:
+                index = data.get("merged_members", []).index(extra_members)
+                temp_members.setdefault(str(index), []).extend(extra_members)
+
+                for member in extra_members:
+                    check_user = self.bot.fetch_user(member['user_id'])
+                    if check_user is None:
+                        member = Member(member, self.bot)
+                        self.bot.cached_users[member.id] = member
+                    else:
+                        check_user.partial_update(member)
+
+            if guild is not None:
+                guilds: list = data.get("guilds", [])
+                index = guilds.index(guild)
+                temp_guilds.setdefault(str(index), []).append(guild)
+                # print(temp_guilds[str(index)])
+                # print(index, guild)
+                check_guild = self.bot.fetch_guild(guild['id'])
+                if check_guild is None:
+                    guild = Guild(guild, self.bot)
+                    self.bot.user.guilds.append(guild)
+                    guild.members.append(temp_members[str(index)])
+                else:
+                    check_guild.partial_update(guild)
+                    check_guild.members.append(temp_members[str(index)])
+
+        merged_presences = data.get("merged_presences", {})
+        guilds = merged_presences.get("guilds")
+        for index, users in enumerate(guilds):
+            temp_members.setdefault(str(index), []).extend(users)
+            for user in users:
+                check_user = self.bot.fetch_user(user['user_id'])
                 if check_user is None:
                     user = User(user, self.bot)
-                    self.bot.cached_users[user.id] = user
+                    self.bot.cached_users.append(user)
                 else:
                     check_user.partial_update(user)
-        for friend in data['friends']:
-            check_user = self.bot.fetch_user(friend['id'])
+
+        friends = merged_presences.get("friends")
+        for user in friends:
+            check_user = self.bot.fetch_user(user['user_id'])
             if check_user is None:
-                user = User(friend, self.bot)
-                self.bot.cached_users[user.id] = user
+                user = User(user, self.bot)
+                self.bot.cached_users.append(user)
             else:
-                check_user.partial_update(friend)
-        for guild in data['merged_members']:
-            for member in guild:
-                check_user = self.bot.fetch_user(member['id'])
-                if check_user is None:
-                    user = User(member, self.bot)
-                    self.bot.cached_users[user.id] = user
-                    
-        pass
+                check_user.partial_update(user)
+
+
+        for index, indexed_guild in temp_guilds.items():
+            members = temp_members[str(index)]
+            guild = self.bot.fetch_guild(indexed_guild[0]['id'])
+            if guild is not None:
+                guild.members.extend(members)
+                guild.partial_update(indexed_guild[0])
+
+        await self.bot.emit("ready_supplemental")
 
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)

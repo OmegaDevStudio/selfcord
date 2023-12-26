@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+from time import perf_counter
 import asyncio
 import contextlib
 import importlib
@@ -86,6 +87,7 @@ class Bot:
         self.cached_channels: dict[str, Messageable] = {}
         self.cached_messages: dict[str, Message] = {}
         self.gateway: Gateway = Gateway(self)
+        self.startup = perf_counter()
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -328,16 +330,6 @@ class Bot:
                 name=name, description=description, aliases=aliases, func=coro
             )
             self.commands.add(cmd)
-
-    async def process_commands(self, msg):
-        """
-        What is called in order to actually get command input and run commands
-
-        Args:
-            msg (str): The message containing command
-        """
-        context = Context(self, msg, self.http)
-        asyncio.create_task(context.invoke())
 
     async def load_extension(self, name: str | None = None, url: str | None = None, dir: str | None = None):
         """

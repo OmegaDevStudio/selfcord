@@ -17,6 +17,7 @@ class Flags:
 
 
 class Capabilities(Flags):
+    
     @classmethod
     def default(cls):
         """Utilise default values for optimal anti-flag"""

@@ -39,3 +39,22 @@ class Message:
         self.embeds = payload.get("embeds")
         self.components = payload.get("components")
         self.attachments = payload.get("attachments")
+
+    async def delete(self):
+        await self.http.request(
+            "DELETE", f"/channels/{self.channel_id}/messages/{self.id}"
+        )
+
+    async def reply(self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False):
+        await self.http.request(
+            "POST", f"/channels/{self.channel_id}/messages",
+            json={
+                "mobile_network_type":"unknown",
+                "content":content,
+                "tts":tts,
+                "message_reference":{
+                    "channel_id":self.channel_id,
+                    "message_id":self.id
+                },
+                "allowed_mentions":{"parse":["users","roles","everyone"],"replied_user":True},"flags":0}
+        )

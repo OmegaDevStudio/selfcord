@@ -61,6 +61,8 @@ class Messageable:
                 headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
             )
 
+    
+
 
 class DMChannel(Messageable):
     def __init__(self, payload: dict, bot: Bot):

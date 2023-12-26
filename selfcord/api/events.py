@@ -132,6 +132,8 @@ class Handler:
                 guild.members.extend(members)
                 guild.partial_update(indexed_guild[0])
 
+
+        await self.bot.inbuilt_commands()
         await self.bot.emit("ready_supplemental")
 
     async def handle_message_create(self, data: dict):

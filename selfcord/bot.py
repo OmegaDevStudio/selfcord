@@ -88,6 +88,7 @@ class Bot:
         self.cached_messages: dict[str, Message] = {}
         self.gateway: Gateway = Gateway(self)
         self.startup = perf_counter()
+    
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -127,12 +128,11 @@ class Bot:
         I call this on bot initialisation, it's the inbuilt help command
         """
         if self.inbuilt_help:
-
             @self.cmd("The help command!", aliases=["test"])
             async def help(ctx, cat=None):
                 """The help command, dedicated to viewing all commands, extensions and information regarding commands."""
                 if cat is None:
-                    msg = f"```ini\n[ {self.user.name} Selfbot ]\n"
+                    msg = f"```ini\n[ {self.user.username} Selfbot ]\n"
                     msg += f"[ {self.user} ]\nType <prefix>help <ext_name> to view commands relating to a specific extension. Type <prefix>help <cmd_name> to view information regarding a command.\n[ .Prefixes ] : {self.prefixes}\n\n"
                     msg += f"[ .Commands ]\n"
                     for command in self.commands:
@@ -148,7 +148,7 @@ class Bot:
                     name = cat.lower()
                     for ext in self.extensions:
                         if name == ext.name.lower():
-                            msg = f"```ini\n[ {self.user.name} Selfbot ]\n"
+                            msg = f"```ini\n[ {self.user.username} Selfbot ]\n"
                             msg += f"[ {self.user} ]\n\nType <prefix>help <ext_name> to view commands relating to a specific extension. Type <prefix>help <cmd_name> to view information regarding a command.\n\n[ .Prefixes ] : {self.prefixes}\n\n"
                             msg += f"[ .Commands ]\n"
                             for command in ext.commands:
@@ -160,7 +160,7 @@ class Bot:
                     else:
                         for cmd in self.commands:
                             if name == cmd.name.lower():
-                                msg = f"```ini\n[ {self.user.name} Selfbot ]\n"
+                                msg = f"```ini\n[ {self.user.username} Selfbot ]\n"
                                 msg += f"[ {self.user} ]\n\nType <prefix>help <ext_name> to view commands relating to a specific extension. Type <prefix>help <cmd_name> to view information regarding a command.\n\n[ .Prefixes ] : {self.prefixes}\n\n"
                                 msg += f"[ .{cmd.name} ]\n"
                                 msg += f"[ Description ] :  {cmd.description} \n"
@@ -179,7 +179,7 @@ class Bot:
                         for ext in self.extensions:
                             for cmd in ext.commands:
                                 if name == cmd.name.lower():
-                                    msg = f"```ini\n[ {self.user.name} Selfbot ]\n"
+                                    msg = f"```ini\n[ {self.user.username} Selfbot ]\n"
                                     msg += f"[ {self.user} ]\n\nType <prefix>help <ext_name> to view commands relating to a specific extension. Type <prefix>help <cmd_name> to view information regarding a command.\n\n[ .Prefixes ] : {self.prefixes}\n\n"
                                     msg += f"[ .{cmd.name} ]\n"
                                     msg += f"[ Description ] :  {cmd.description} \n"
@@ -199,7 +199,7 @@ class Bot:
                                     return await ctx.reply(f"{msg}")
 
         if self.eval:
-
+            # print("EVAL ACTIVATE???")
             def clean_code(content):
                 if content.startswith("```") and content.endswith("```"):
                     return "\n".join(content.split("\n")[1:])[:-3]
@@ -213,6 +213,7 @@ class Bot:
                 """Runs python code via exec, intended for experienced usage. This can be DANGEROUS if you do not know what you are doing, use with caution."""
                 if code.startswith("```"):
                     code = clean_code(code)
+                # print("EVAL ACTIVATE???")
                 envs = {
                     "bot": self,
                     "ctx": ctx,

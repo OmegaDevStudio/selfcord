@@ -488,7 +488,7 @@ class Context:
             content (str): The message you would like to send
             tts (bool, optional): Whether message should be tts or not. Defaults to False.
         """
-        message: Message = await self.channel.reply(self.message, content, file_paths, delete_after, tts)
+        message: Message = await self.message.reply(content, file_paths, delete_after, tts)
         return message
 
     async def send(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:

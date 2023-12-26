@@ -180,7 +180,13 @@ class Guild:
                     setattr(self, key, value)
 
     async def get_members(self, channels: list[Messageable]):
+        # Doesn't work yet I'm gonna fix
         await self.bot.gateway.chunk_members(self, channels)
+
+    async def delete(self):
+        await self.http.request(
+            "POST", f"/guilds/{self.id}/delete"
+        )
 
 class Emoji:
     def __init__(self, payload: dict, bot: Bot):

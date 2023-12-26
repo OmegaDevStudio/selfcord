@@ -197,6 +197,7 @@ class Gateway:
                 "op": 14,
                 "d": {
                     "guild_id": guild.id,
+                    "typing": True,
                 }
             }
             data = payload['d']
@@ -207,6 +208,7 @@ class Gateway:
             data['channel'] = queries
             
             await self.send_json(payload)
+            print("sent")
             await asyncio.sleep(2.0)
         
 

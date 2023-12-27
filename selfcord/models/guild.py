@@ -188,6 +188,31 @@ class Guild:
             "POST", f"/guilds/{self.id}/delete"
         )
 
+    async def create_channel(self, name: str, type: int, permission_overwrites: list[dict] = []) -> Optional[Messageable]:
+        json = await self.http.request(
+            "POST",
+            f"/guilds/{self.id}/channels",
+            json={"name": name, "type": type, "permission_overwrites": permission_overwrites}
+        )
+        return Convert(json, self.bot) or None
+    
+    async def create_text_channel(self, name: str, permission_overwrites: list[dict] = []) -> Optional[Messageable]:
+        json = await self.http.request(
+            "POST",
+            f"/guilds/{self.id}/channels",
+            json={"name": name, "type": 0, "permission_overwrites": permission_overwrites}
+        )
+        return Convert(json, self.bot) or None
+    
+    async def create_voice_channel(self, name: str, permission_overwrites: list[dict] = []) -> Optional[Messageable]:
+        json = await self.http.request(
+            "POST",
+            f"/guilds/{self.id}/channels",
+            json={"name": name, "type": 2, "permission_overwrites": permission_overwrites}
+        )
+        return Convert(json, self.bot) or None
+
+
 class Emoji:
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot

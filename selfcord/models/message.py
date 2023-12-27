@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from .users import User, Member
-from .channels import Messageable
-from .guild import Guild
 
 if TYPE_CHECKING:
     from ..bot import Bot
-
+    from .channels import Messageable
+    from .guild import Guild
+    
 class Message:
     def __init__(self, data: dict, bot: Bot):
         self.bot = bot

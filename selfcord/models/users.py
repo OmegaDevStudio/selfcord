@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from .assets import Asset
-from .channels import DMChannel, Messageable
 
 if TYPE_CHECKING:
     from ..bot import Bot
+    from .channels import DMChannel, Messageable
 
 
 # Realise this might be fucked because my subclassism didn't work with channels

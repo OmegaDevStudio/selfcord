@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+from .message import Message
 from .assets import Asset
 import random
 import asyncio
@@ -7,7 +8,7 @@ import asyncio
 if TYPE_CHECKING:
     from .users import User
     from ..bot import Bot
-    from ..api import DiscordHttp
+    from ..api import HttpClient
 
 
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 class Messageable:
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
-        self.http = bot.http
+        self.http: DiscordHttp = bot.http
         self.guild_id: str
         self.id: str
         self.type: int
@@ -29,6 +30,7 @@ class Messageable:
 
     @property
     def nonce(self) -> int:
+        """YES IM LAZY"""
         return random.randint(100000, 99999999)
 
     async def send(
@@ -60,6 +62,60 @@ class Messageable:
                 "DELETE", f"/channels/{self.id}",
                 headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
             )
+
+    async def history(self, limit: int = 50, bot_user_only: bool = False):
+        n = 0
+        if self.type in (1, 3):
+            headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
+        else:
+            headers = {
+                "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
+            }
+        json = await self.http.request(
+            "GET", f"/channels/{self.id}/messages?limit=50",
+            headers=headers
+        )
+        msgs = []
+
+        for message in json:
+            msg = Message(message, self.bot)
+            if bot_user_only:
+                if msg.author.id == self.bot.user.id:
+                    msgs.append(msg)
+            else:
+                msgs.append(msg)
+            self.bot.cached_messages[msg.id] = msg
+            n += 1
+        print("got msgs", len(msgs))
+        while n < limit:
+            last = msgs[-1]
+            json = await self.http.request(
+                "GET", f"/channels/{self.id}/messages?before={last.id}&limit=50",
+                headers=headers
+            )
+            print("in loop", len(msgs))
+            for message in json:
+                msg = Message(message, self.bot)
+                if bot_user_only:
+                    if msg.author.id == self.bot.user.id:
+                        msgs.append(msg)
+                else:
+                    msgs.append(msg)
+                self.bot.cached_messages[msg.id] = msg
+                n += 1
+            
+        return msgs[:limit]
+    
+    async def purge(self, amount: int):
+        msgs = await self.history(amount, bot_user_only=True)
+        for i in range(0, len(msgs), 2):
+            await asyncio.gather(*(msg.delete()
+                                   for msg in msgs[i:i+2]))
+
+        
+            
+        
+
 
     
 

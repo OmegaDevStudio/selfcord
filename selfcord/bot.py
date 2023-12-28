@@ -310,12 +310,12 @@ class Bot:
             pass
 
     def load_tokens(self, tokens: list[str]):
+        
         pass
     
     def add_cmd(self, coro, description="", aliases=[]):
         """
         Function to add commands manually without decorator
-
         Args:
             coro (coroutine): The function to add
             description (str, optional): Description of command. Defaults to "".

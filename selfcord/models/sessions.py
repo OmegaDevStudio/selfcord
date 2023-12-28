@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from ..bot import Bot
 
 class Event_Session:
-    def __init__(self, data: dict, bot: Bot, http: http):
+    def __init__(self, data: dict, bot: Bot, http: HttpClient):
         self.bot = bot
         self.http = http
         self._update(data)
@@ -27,7 +27,7 @@ class Event_Session:
 
 
 class Session:
-    def __init__(self, data: dict, bot: Bot, http: http):
+    def __init__(self, data: dict, bot: Bot, http: HttpClient):
         self.bot: Bot = bot
         self.http: HttpClient = http
         self._update(data)

@@ -4,6 +4,7 @@ from .assets import Asset
 
 if TYPE_CHECKING:
     from ..bot import Bot
+    from .guild import Guild, Role
     from .channels import DMChannel, Messageable
 
 

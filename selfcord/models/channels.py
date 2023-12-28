@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class Messageable:
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
-        self.http: DiscordHttp = bot.http
+        self.http: HttpClient = bot.http
         self.guild_id: str
         self.id: str
         self.type: int

@@ -310,7 +310,7 @@ class Bot:
             pass
 
     def load_tokens(self, tokens: list[str]):
-        
+        pass
     
     def add_cmd(self, coro, description="", aliases=[]):
         """

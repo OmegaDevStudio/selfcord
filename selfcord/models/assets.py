@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Self
+
 
 
 class Asset:
@@ -22,7 +22,7 @@ class Asset:
             self.url = f"https://cdn.discordapp.com/avatars/{self.id}/{self.hash}.gif?size=4096"
         return self
 
-    def from_icon(self) -> Self:
+    def from_icon(self):
         self.url = (
             f"https://cdn.discordapp.com/icons/{self.id}/{self.hash}.png?size=4096"
         )

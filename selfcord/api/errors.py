@@ -14,6 +14,7 @@ class LoginFailure(DiscordException):
 class ReconnectWebsocket(DiscordException):
     def __init__(self, message: str) -> None:
         self.message = message
+        pass
 
 
 class RuntimeError(DiscordException):

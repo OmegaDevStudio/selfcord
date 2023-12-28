@@ -144,6 +144,11 @@ class Client(User):
             if hasattr(self, key):
                 setattr(self, key, value)
 
+    async def change_display_name(self, global_name: str):
+        await self.http.request(
+            "PATCH", "/users/@me",
+            json={"global_nane": global_name}
+        )
     async def change_pfp(self, avatar_url: str, animated: bool = False):
         await self.http.request(
             "PATCH", "/users/@me",

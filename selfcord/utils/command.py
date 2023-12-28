@@ -177,9 +177,7 @@ class CommandCollection:
     def remove(self, cmd: Command):
         if not isinstance(cmd, Command):
             log.error("cmd must be a subclass of Command")
-        deleted = self.commands.get(cmd, None)
-        if deleted is not None:
-            del deleted
+        self.commands.pop(cmd.name)
 
     def recents(self):
         """View commands recently acquired

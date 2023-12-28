@@ -320,9 +320,12 @@ class Bot:
 
     async def load_tokens(self, tokens: list):
         mass_bot = self.__class__(prefixes=self.prefixes, token_leader=self.user.id)
+        rel_cmd = None
         for cmd in self.commands:
             if cmd.mass_token:
+                rel_cmd = cmd
                 mass_bot.commands.add(cmd)
+        self.commands.remove(rel_cmd)
         self.tokens = await asyncio.gather(*(
             mass_bot.runner(token, True)
             for token in tokens
@@ -345,7 +348,6 @@ class Bot:
         if not inspect.iscoroutinefunction(coro):
             log.error("Not a coroutine")
             raise Exception("Not a coroutine")
-
         else:
             cmd = Command(
                 name=name, description=description, aliases=aliases, func=coro

@@ -144,6 +144,18 @@ class Client(User):
             if hasattr(self, key):
                 setattr(self, key, value)
 
+    async def change_pfp(self, avatar_url: str, animated: bool = False):
+        await self.http.request(
+            "PATCH", "/users/@me",
+            json={"avatar": self.http.encode_image(avatar_url, animated)}
+        )
+
+    async def change_banner(self, banner_url: str, animated: bool = False):
+        await self.http.request(
+            "PATCH", "/users/@me/profile",
+            json={"avatar": self.http.encode_image(banner_url, animated)}
+        )
+
 class Member(User):
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot

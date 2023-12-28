@@ -201,7 +201,7 @@ class HttpClient:
         except:
             return None
 
-    async def encode_image(self, url: str) -> str:
+    async def encode_image(self, url: str, animated: bool = False) -> str:
         """Turn an image url into a b64 payload
 
         Args:
@@ -214,4 +214,6 @@ class HttpClient:
             async with session.get(f"{url}") as resp:
                 image = b64encode(await resp.read())
                 newobj = str(image).split("'", 2)
+        if animated:
+            return f"data:image/octet-stream;base64,{newobj[1]}"
         return f"data:image/png;base64,{newobj[1]}"

@@ -1,7 +1,7 @@
 import itertools
 from time import perf_counter
 from aioconsole import aprint
-from ..models import Guild, Convert, User, Message, Member
+from ..models import Guild, Convert, User, Message, Member, MessageAck
 import ujson
 
 class Handler:
@@ -140,12 +140,17 @@ class Handler:
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
-        # print(self.bot.user.id, self.bot.token_leader, self.bot.userbot)
-        
         await self.bot.process_commands(message)
-
-        
         await self.bot.emit("message", message)
+
+    async def handle_message_update(self, data: dict):
+        message = Message(data, self.bot)
+        self.bot.cached_messages[message.id] = message
+        await self.bot.emit("message", message)
+
+    async def handle_message_ack(self, data: dict):
+        ack = MessageAck(data, self.bot)
+        await self.bot.emit("message_ack", ack)
 
     async def handle_message_delete(self, data: dict):
         # Was thinking of maybe removing it from cache

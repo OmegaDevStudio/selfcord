@@ -69,4 +69,14 @@ class Message:
         if json is not None:
             return Message(json, self.bot)
         
-    
+class MessageAck:
+    def __init__(self, payload: dict, bot) -> None:
+        self.bot = bot
+        self.http = bot.http
+
+    def update(self, payload: dict):
+        self.channel_id: str = payload['channel_id']
+        self.flags: Optional[int] = payload.get("flags")
+        self.last_viewed = payload['last_viewed']
+        self.message_id = payload['message_id']
+        self.version = payload['version']

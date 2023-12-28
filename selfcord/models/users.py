@@ -21,6 +21,26 @@ class Status:
         self.status = payload.values()
 
 
+class Profile():
+    def __init__(self, id: str, payload: dict):
+        self.id = id
+        self.update(payload)
+
+    def update(self, payload: dict):
+        self.bio: Optional[str] = payload.get("bio")
+        self.accent_color: Optional[str] = payload.get("accent_color")
+        self.pronouns: Optional[str] = payload.get("pronouns")
+        self.profile_effect: Optional[str] = payload.get("profile_effect")
+        self.banner: Optional[Asset] = (
+            Asset(self.id, payload["banner"]).from_avatar()
+            if payload.get("banner") is not None and self.id is not None
+            else None
+        )
+        self.theme_colors: Optional[list[int]] = payload.get("theme_colors")
+        self.popout_animation_particle_type: Optional[str] = payload.get("popout_animation_particle_type")
+        self.emoji: Optional[str] = payload.get("emoji")
+
+
 class User:
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
@@ -149,6 +169,7 @@ class Client(User):
             "PATCH", "/users/@me",
             json={"global_nane": global_name}
         )
+
     async def change_pfp(self, avatar_url: str, animated: bool = False):
         await self.http.request(
             "PATCH", "/users/@me",

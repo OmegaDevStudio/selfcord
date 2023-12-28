@@ -6,7 +6,7 @@ import shlex
 from collections import defaultdict
 from traceback import format_exception
 from typing import TYPE_CHECKING, Any, Optional
-
+from ..models import Message
 from .logging import logging
 
 if TYPE_CHECKING:
@@ -106,6 +106,7 @@ class Command:
         self.name: str | None = kwargs.get("name")
         self.aliases: list[str] | None = [self.name] + kwargs.get("aliases", [])
         self.description: str | None = kwargs.get("description")
+        self.mass_token: bool = kwargs.get("mass_token", False)
         self.func: function | None = kwargs.get("func")
         self.check: Any = inspect.signature(self.func).return_annotation
         self.signature = inspect.signature(self.func).parameters.items()
@@ -172,6 +173,13 @@ class CommandCollection:
             log.error("Command Name or Alias is already registered")
         self.commands[cmd.name] = cmd
         self.recent_commands[cmd.name] = cmd
+
+    def remove(self, cmd: Command):
+        if not isinstance(cmd, Command):
+            log.error("cmd must be a subclass of Command")
+        deleted = self.commands.get(cmd, None)
+        if deleted is not None:
+            del deleted
 
     def recents(self):
         """View commands recently acquired
@@ -463,9 +471,15 @@ class Context:
         """Used to actually run the command"""
         if self.command is None:
             return
+        
+        if self.bot.token_leader is not None:
+            if self.message.author.id != self.bot.token_leader:
+                return
+
         if not self.bot.userbot:
             if self.message.author.id != self.bot.user.id:
                 return
+        
         if self.command_content != None:
             args, kwargs = await self.get_arguments()
             func = self.command.func
@@ -481,15 +495,14 @@ class Context:
             error = "".join(format_exception(e, e, e.__traceback__))
             log.error(f"Could not run command \n{error}")
 
-    async def reply(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Message:
+    async def reply(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:
         """Helper function to reply to your own message containing the command
 
         Args:
             content (str): The message you would like to send
             tts (bool, optional): Whether message should be tts or not. Defaults to False.
         """
-        message: Message = await self.message.reply(content, file_paths, delete_after, tts)
-        return message
+        return await self.message.reply(content, file_paths, delete_after, tts)
 
     async def send(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:
         """Helper function to send message to the current channel
@@ -498,10 +511,8 @@ class Context:
             content (str): The message you would like to send
             tts (bool, optional): Whether message should be tts or not. Defaults to False.
         """
-        json = await self.channel.send(content=content, files=file_paths, delete_after=delete_after, tts=tts)
-        
-        return Message(json, self.bot) or None
-    
+        return await self.channel.send(content=content, files=file_paths, delete_after=delete_after, tts=tts)
+
 
     async def purge(self, amount: int = 0):
         """Helper function to purge messages in the current channel, uses asyncio gather.
@@ -517,5 +528,5 @@ class Context:
         Args:
             content (str): Content to edit to
         """
-        message = await self.message.edit(content, file_paths, delete_after)
-        return message
+        return await self.message.edit(content, file_paths, delete_after)
+

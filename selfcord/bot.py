@@ -63,6 +63,7 @@ class Bot:
         prefixes: list[str] = ["s!"],
         inbuilt_help: bool = True,
         userbot: bool = False,
+        token_leader: Optional[str] = None,
         eval: bool = False,
     	password: Optional[str] = None
     ) -> None:
@@ -81,8 +82,12 @@ class Bot:
         self.extensions = ExtensionCollection()
         self.user: Client
         self.eval: bool = eval
-        self.userbot: bool = userbot
-        self.password = password
+        self.token_leader = token_leader
+        if self.token_leader is not None:
+            self.userbot: bool = True
+        else:
+            self.userbot: bool = userbot
+        self.password: str = password
         self.cached_users: dict[str, User] = {}
         self.cached_channels: dict[str, Messageable] = {}
         self.cached_messages: dict[str, Message] = {}
@@ -93,13 +98,19 @@ class Bot:
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
+
         
-    async def runner(self, token: str):
+    async def runner(self, token: str, multi_token: bool = False):
         data = await self.http.static_login(token)
         if data is not None:
             self.user = Client(data, self)
+            
             try:
-                await self.gateway.start(token)
+                if not multi_token:
+                    await self.gateway.start(token)
+                else:
+                    asyncio.create_task(self.gateway.start(token))
+                    return self.user
             except Exception as e:
                 raise e
 
@@ -277,7 +288,7 @@ class Bot:
                 else:
                     asyncio.create_task(Event.coro(*args, **kwargs))
 
-    def cmd(self, description="", aliases=[]):
+    def cmd(self, description="", aliases=[], mass_token: bool = False):
         """Decorator to add commands for the bot
 
         Args:
@@ -298,19 +309,24 @@ class Bot:
                 return
             else:
                 cmd = Command(
-                    name=name, description=description, aliases=aliases, func=coro
+                    name=name, description=description, aliases=aliases, func=coro, mass_token=mass_token
                 )
                 self.commands.add(cmd)
             return cmd
 
         return decorator
     
-    def multi_token(self):
-        def decorator(coro):
-            pass
+        
 
-    def load_tokens(self, tokens: list[str]):
-        pass
+    async def load_tokens(self, tokens: list):
+        mass_bot = self.__class__(prefixes=self.prefixes, token_leader=self.user.id)
+        for cmd in self.commands:
+            if cmd.mass_token:
+                mass_bot.commands.add(cmd)
+        self.tokens = await asyncio.gather(*(
+            mass_bot.runner(token, True)
+            for token in tokens
+        ))
     
     def add_cmd(self, coro, description="", aliases=[]):
         """

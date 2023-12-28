@@ -2,7 +2,7 @@ import itertools
 from time import perf_counter
 from aioconsole import aprint
 from ..models import Guild, Convert, User, Message, Member
-
+import ujson
 
 class Handler:
     def __init__(self, bot) -> None:
@@ -10,12 +10,12 @@ class Handler:
 
     async def handle_ready(self, data: dict):
         self._ready_data = data
+
         guilds = data.get("guilds", [])
         private_channels = data.get("private_channels", [])
         users = data.get("users", [])
         relationships = data.get("relationship", [])
         merged_members = data.get("merged_members", [])
-
         for guild, channel, user, relation in itertools.zip_longest(
             guilds,
             private_channels,
@@ -140,7 +140,11 @@ class Handler:
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
+        # print(self.bot.user.id, self.bot.token_leader, self.bot.userbot)
+        
         await self.bot.process_commands(message)
+
+        
         await self.bot.emit("message", message)
 
     async def handle_message_delete(self, data: dict):
@@ -177,7 +181,7 @@ class Handler:
     async def handle_guild_create(self, data: dict):
         guild = Guild(data, self.bot)
         self.bot.user.guilds.append(guild)
-        self.bot.emit("guild_create")
+        await self.bot.emit("guild_create")
 
     async def handle_guild_delete(self, data: dict):
         guild = self.bot.fetch_guild(data['id'])

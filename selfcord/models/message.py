@@ -76,7 +76,28 @@ class MessageAck:
 
     def update(self, payload: dict):
         self.channel_id: str = payload['channel_id']
+        self.channel = self.bot.fetch_channel(self.channel_id)
         self.flags: Optional[int] = payload.get("flags")
         self.last_viewed = payload['last_viewed']
         self.message_id = payload['message_id']
+        self.message = self.bot.fetch_message(self.message_id)
         self.version = payload['version']
+
+class MessageReactionAdd:
+    def __init__(self, payload: dict, bot) -> None:
+        self.bot = bot
+        self.http = bot.http
+
+    def update(self, payload: dict):
+        self.burst: bool = payload['burst']
+        self.channel_id: str = payload['channel_id']
+        self.emoji: str = payload['emoji']
+        self.guild_id: Optional[str] = payload.get("guild_id")
+        self.type = payload.get("type", 0)
+        self.user_id = payload['user_id']
+        self.message = self.bot.fetch_message(payload['message_id'])
+        self.message_id = payload['message_id']
+        self.author = self.bot.fetch_user(payload['message_author_id'])
+        self.author_id = payload['message_author_id']
+        self.user_id = payload['user_id']
+        self.user = self.bot.fetch_user(self.user_id) 

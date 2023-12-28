@@ -19,5 +19,5 @@ from .channels import (
     Convert,
     Messageable
 )
-from .message import Message, MessageAck
+from .message import Message, MessageAck, MessageReactionAdd
 from .activity import Activity

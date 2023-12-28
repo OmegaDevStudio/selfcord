@@ -1,7 +1,7 @@
 import itertools
 from time import perf_counter
 from aioconsole import aprint
-from ..models import Guild, Convert, User, Message, Member, MessageAck
+from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd
 import ujson
 
 class Handler:
@@ -140,6 +140,8 @@ class Handler:
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
+        if message.author.id not in self.bot.cached_users:
+            self.bot.cached_users[message.author.id] = message.author
         await self.bot.process_commands(message)
         await self.bot.emit("message", message)
 
@@ -158,6 +160,9 @@ class Handler:
         # This can return None if there is no valid message in cache
         deleted_message = self.bot.fetch_message(data['id'])
         await self.bot.emit("message_delete", deleted_message)
+
+    async def handle_message_reaction_add(self, data: dict):
+        await self.bot.emit("message_reaction_add", MessageReactionAdd(data, self.bot))
 
     async def handle_channel_create(self, data: dict):
 

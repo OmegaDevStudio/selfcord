@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from ..bot import Bot
     from .channels import Messageable
     from .guild import Guild
-    
+
 class Message:
     def __init__(self, data: dict, bot: Bot):
         self.bot = bot
@@ -45,8 +45,8 @@ class Message:
             "DELETE", f"/channels/{self.channel_id}/messages/{self.id}"
         )
 
-    async def reply(self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False):
-        await self.http.request(
+    async def reply(self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False) -> Optional[Message]:
+        json = await self.http.request(
             "POST", f"/channels/{self.channel_id}/messages",
             json={
                 "mobile_network_type":"unknown",
@@ -58,3 +58,15 @@ class Message:
                 },
                 "allowed_mentions":{"parse":["users","roles","everyone"],"replied_user":True},"flags":0}
         )
+        if json is not None:
+            return Message(json, self.bot)
+
+    async def edit(self, content: str) -> Optional[Message]:
+        json = await self.http.request(
+            "PATCH", f"/channels/{self.channel_id}/messages/{self.id}", 
+            json={"content": content}
+        )
+        if json is not None:
+            return Message(json, self.bot)
+        
+    

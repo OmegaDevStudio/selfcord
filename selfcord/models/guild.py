@@ -188,6 +188,18 @@ class Guild:
             "POST", f"/guilds/{self.id}/delete"
         )
 
+    async def create_role(self, name: str, color: int = 0, permissions: int = 0):
+        json = await self.http.request(
+            "POST", f"/guilds/{self.id}/roles",
+            json={
+                "name": name,
+                "color": color,
+                "permissions": permissions
+            }
+        )
+        if json is not None:
+            return Role(json, self.bot)
+
     async def create_channel(self, name: str, type: int, permission_overwrites: list[dict] = []) -> Optional[Messageable]:
         json = await self.http.request(
             "POST",

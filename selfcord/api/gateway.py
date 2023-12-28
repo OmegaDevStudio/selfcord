@@ -73,7 +73,6 @@ class Gateway:
                         method = getattr(
                             self.handler, f"handle_{event.lower()}")
                         asyncio.create_task(method(data))
-                    print(event)
 
     async def connect(self):
         self.ws = await websockets.connect(

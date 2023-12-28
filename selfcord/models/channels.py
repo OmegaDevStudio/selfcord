@@ -33,9 +33,13 @@ class Messageable:
         """YES IM LAZY"""
         return random.randint(100000, 99999999)
 
+    async def delayed_delete(self, message, time):
+        await asyncio.sleep(time)
+        await message.delete()
+
     async def send(
         self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
-    ) -> Optional[Messageable]:
+    ) -> Optional[Message]:
         if self.type in (1, 3):
             headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
         else:
@@ -49,7 +53,12 @@ class Messageable:
             json={"content": content, "flags": 0, "tts": tts, "nonce": self.nonce},
         )
         if json is not None:
-            return Convert(json, self.bot)
+            if delete_after != None:
+                msg = Message(json, self.bot)
+                await asyncio.create_task(self.delayed_delete(msg, delete_after))
+                return msg
+                
+            return Message(json, self.bot)
 
     async def delete(self) -> Optional[Messageable]:
         if self.type in (1,3):

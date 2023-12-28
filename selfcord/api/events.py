@@ -108,6 +108,7 @@ class Handler:
         for index, users in enumerate(guilds):
             temp_members.setdefault(str(index), []).extend(users)
             for user in users:
+                # print(user['user_id'])
                 check_user = self.bot.fetch_user(user['user_id'])
                 if check_user is None:
                     user = User(user, self.bot)

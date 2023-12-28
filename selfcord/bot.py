@@ -94,7 +94,14 @@ class Bot:
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
         
-        
+    async def runner(self, token: str):
+        data = await self.http.static_login(token)
+        if data is not None:
+            self.user = Client(data, self)
+            try:
+                await self.gateway.start(token)
+            except Exception as e:
+                raise e
 
     def run(self, token: str):
         """Used to start connection to gateway as well as gather user information
@@ -104,16 +111,8 @@ class Bot:
         """
         self.token = token
 
-        async def runner():
-            data = await self.http.static_login(token)
-            if data is not None:
-                self.user = Client(data, self)
-                try:
-                    await self.gateway.start(token)
-                except Exception as e:
-                    raise e
         try: 
-            asyncio.run(runner())
+            asyncio.run(self.runner(token))
         except Exception as e:
             raise e
 
@@ -277,7 +276,6 @@ class Bot:
 
                 else:
                     asyncio.create_task(Event.coro(*args, **kwargs))
-        
 
     def cmd(self, description="", aliases=[]):
         """Decorator to add commands for the bot
@@ -306,7 +304,14 @@ class Bot:
             return cmd
 
         return decorator
+    
+    def multi_token(self):
+        def decorator(coro):
+            pass
 
+    def load_tokens(self, tokens: list[str]):
+        pass
+    
     def add_cmd(self, coro, description="", aliases=[]):
         """
         Function to add commands manually without decorator
@@ -472,7 +477,6 @@ class Bot:
 
             User: The User object
         """
-
         data = await self.http.request(method="get", endpoint=f"/users/{user_id}")
         if data is not None:
             return User(data, bot=self)

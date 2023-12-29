@@ -318,8 +318,15 @@ class Bot:
     
         
 
-    async def load_tokens(self, tokens: list):
-        mass_bot = self.__class__(prefixes=self.prefixes, token_leader=self.user.id)
+    async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
+        mass_bot = self.__class__(prefixes=prefixes, token_leader=self.user.id, eval=eval, inbuilt_help=False)
+
+        @mass_bot.cmd()
+        async def help(ctx):
+            desc = "```\n"
+            for cmd in self.commands:
+                desc += f"{cmd.name}  :  {cmd.description}\n"
+            await ctx.reply(desc)
         rel_cmd = None
         for cmd in self.commands:
             if cmd.mass_token:

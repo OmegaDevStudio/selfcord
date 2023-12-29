@@ -54,7 +54,12 @@ class Gateway:
             buffer.extend(item)
             if len(item) < 4 or item[-4:] != self.zlib_suffix:
                 return
-            item = ujson.loads(self.zlib.decompress(item))
+            try:
+                item = ujson.loads(self.zlib.decompress(item))
+            except:
+                with open("test.txt", "a+") as f:
+                    f.write(f"{item}")
+
             if item:
                 op = item["op"]
                 data = item["d"]
@@ -76,7 +81,9 @@ class Gateway:
 
     async def connect(self):
         self.ws = await websockets.connect(
-            self.URL, origin="https://discord.com", max_size=None
+            self.URL, origin="https://discord.com", max_size=None,
+            extra_headers={"user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0"},
+            read_limit=1000000, max_queue=100, write_limit=1000000,
         )
 
     async def start(self, token: str):
@@ -107,7 +114,7 @@ class Gateway:
                     "user_guild_settings_version": -1,
                     "user_settings_version": -1,
                 },
-                "compress": False,
+                "compress": True,
                 "presence": {
                     "activities": [],
                     "afk": False,

@@ -65,6 +65,7 @@ class Bot:
         userbot: bool = False,
         token_leader: Optional[str] = None,
         eval: bool = False,
+        decompress: bool = True,
     	password: Optional[str] = None
     ) -> None:
         self.inbuilt_help: bool = inbuilt_help
@@ -91,7 +92,7 @@ class Bot:
         self.cached_users: dict[str, User] = {}
         self.cached_channels: dict[str, Messageable] = {}
         self.cached_messages: dict[str, Message] = {}
-        self.gateway: Gateway = Gateway(self)
+        self.gateway: Gateway = Gateway(self, decompress)
         self.startup = perf_counter()
     
 
@@ -100,7 +101,7 @@ class Bot:
 
 
         
-    async def runner(self, token: str, multi_token: bool = False):
+    async def runner(self, token: str, multi_token: bool = False, wait: int = 0):
         data = await self.http.static_login(token)
         if data is not None:
             self.user = Client(data, self)
@@ -110,6 +111,7 @@ class Bot:
                     await self.gateway.start(token)
                 else:
                     asyncio.create_task(self.gateway.start(token))
+                    await asyncio.sleep(wait)
                     return self.user
             except Exception as e:
                 raise e
@@ -319,25 +321,38 @@ class Bot:
         
 
     async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
-        mass_bot = self.__class__(prefixes=prefixes, token_leader=self.user.id, eval=eval, inbuilt_help=False)
+        bots = []
+        for token in tokens:
 
-        @mass_bot.cmd()
-        async def help(ctx):
-            desc = "```\n"
+            mass_bot = self.__class__(prefixes=prefixes, token_leader=self.user.id, eval=eval, inbuilt_help=False, )
+
+            @mass_bot.cmd()
+            async def help(ctx):
+                desc = "```\n"
+                for cmd in mass_bot.commands:
+                    desc += f"{cmd.name}  :  {cmd.description}\n"
+                desc += "```"
+                await ctx.reply(desc)
+
             for cmd in self.commands:
-                desc += f"{cmd.name}  :  {cmd.description}\n"
-            await ctx.reply(desc)
-        rel_cmd = None
+                if cmd.mass_token:
+                    mass_bot.commands.add(cmd)
+            
+            bots.append(mass_bot)
+
+        rmv = []
         for cmd in self.commands:
             if cmd.mass_token:
-                rel_cmd = cmd
-                mass_bot.commands.add(cmd)
-        self.commands.remove(rel_cmd)
+                rmv.append(cmd)
+
+        for rm in rmv:
+            self.commands.remove(rm)
+
         self.tokens = await asyncio.gather(*(
-            mass_bot.runner(token, True)
-            for token in tokens
+            bot.runner(token, True)
+            for token, bot in zip(tokens, bots)
         ))
-    
+
     def add_cmd(self, coro, description="", aliases=[]):
         """
         Function to add commands manually without decorator

@@ -95,14 +95,14 @@ class Messageable:
                 msgs.append(msg)
             self.bot.cached_messages[msg.id] = msg
             n += 1
-        print("got msgs", len(msgs))
+       
         while n < limit:
             last = msgs[-1]
             json = await self.http.request(
                 "GET", f"/channels/{self.id}/messages?before={last.id}&limit=50",
                 headers=headers
             )
-            print("in loop", len(msgs))
+      
             for message in json:
                 msg = Message(message, self.bot)
                 if bot_user_only:

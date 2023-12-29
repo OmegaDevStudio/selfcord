@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 
 class Gateway:
-    URL = "wss://gateway.discord.gg/" "?encoding=json&v=9&compress=zlib-stream"
 
     DISPATCH = 0
     HEARTBEAT = 1
@@ -30,35 +29,56 @@ class Gateway:
     HEARTBEAT_ACK = 11
     GUILD_SYNC = 12
 
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Bot, decompress: bool = True) -> None:
+        self.decompress = decompress
         self.bot: Bot = bot
         self.capabilities: Capabilities = self.bot.capabilities
         self.handler: Handler = Handler(bot)
         self.token: Optional[str] = None
-        self.zlib = decompressobj()
+        self.zlib = decompressobj(15)
         self.zlib_suffix: bytes = b"\x00\x00\xff\xff"
         self.last_ack: float = 0
         self.last_send: float = 0
         self.latency: float = float("inf")
         self.ws: Optional[Connect] = None
         self.alive = False
+        self.URL = (
+            "wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream"
+            if self.decompress else 
+            "wss://gateway.discord.gg/?encoding=json&v=9"
+        )
+
 
     async def send_json(self, payload: dict):
         if self.ws:
             await self.ws.send(ujson.dumps(payload))
 
+    async def load_async(self, item):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, ujson.loads, item)
+
     async def recv_json(self):
         if self.ws:
+            
             item = await self.ws.recv()
-            buffer = bytearray()
-            buffer.extend(item)
-            if len(item) < 4 or item[-4:] != self.zlib_suffix:
-                return
-            try:
-                item = ujson.loads(self.zlib.decompress(item))
-            except:
-                with open("test.txt", "a+") as f:
-                    f.write(f"{item}")
+    
+            if self.decompress:
+                buffer = bytearray()
+                buffer.extend(item)
+                if len(item) < 4 or item[-4:] != self.zlib_suffix:
+                    return
+                n = len(item)
+                try:
+                    item = self.zlib.decompress(item)
+                    self.zlib.flush(n)
+                    # self.zlib = decompressobj(15)
+                except Exception as e:
+                    # with open("test.txt", "a+") as f:
+                    #     f.write(f"{item}\n")
+                    print(e)
+            item = await self.load_async(item)
+
+            # await asyncio.sleep(1)
 
             if item:
                 op = item["op"]
@@ -114,7 +134,7 @@ class Gateway:
                     "user_guild_settings_version": -1,
                     "user_settings_version": -1,
                 },
-                "compress": True,
+                "compress": False,
                 "presence": {
                     "activities": [],
                     "afk": False,
@@ -214,7 +234,7 @@ class Gateway:
             data['channel'] = queries
             
             await self.send_json(payload)
-            print("sent")
+
             await asyncio.sleep(2.0)
         
 

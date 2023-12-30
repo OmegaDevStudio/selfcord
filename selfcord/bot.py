@@ -283,7 +283,7 @@ class Bot:
         if event in self._events.keys():
             for Event in self._events[event]:
                 if len(Event.coro.__code__.co_varnames) == 0:
-                    asyncio.create_task(Event.coro(*args, **kwargs))
+                    asyncio.create_task(Event.coro())
                 elif Event.coro.__code__.co_varnames[0] == "self":
                     asyncio.create_task(Event.coro(Event.ext, *args, **kwargs))
 

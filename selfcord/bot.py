@@ -322,6 +322,7 @@ class Bot:
 
     async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
         bots = []
+        rmv = []
         for token in tokens:
 
             mass_bot = self.__class__(prefixes=prefixes, token_leader=self.user.id, eval=eval, inbuilt_help=False, )
@@ -336,36 +337,31 @@ class Bot:
 
             for cmd in self.commands:
                 if cmd.mass_token:
+                    rmv.append(cmd)
                     mass_bot.commands.add(cmd)
-
-            for ext in self.extensions:
-                for cmd in ext.commands:
-                    if cmd.mass_token:
-                        mass_bot.commands.add(cmd)
 
             for ext in self.extensions:
                 for name, value in ext._events.items():
                     for item in value:
                         if item.mass_token:
+                            rmv.append(item)
                             mass_bot._events[name].append(item)
 
             for name, value in self._events.items():
                 for item in value:
                     if item.mass_token:
+                        rmv.append(item)
                         mass_bot._events[name].append(item)
-
-
-            
             
             bots.append(mass_bot)
-
-        rmv = []
-        for cmd in self.commands:
-            if cmd.mass_token:
-                rmv.append(cmd)
-
         for rm in rmv:
-            self.commands.remove(rm)
+            try:
+                if isinstance(rm, Command):
+                    self.commands.remove(rm)
+                else:
+                    self._events.pop(rm.name)
+            except:
+                pass
 
         self.tokens = await asyncio.gather(*(
             bot.runner(token, True)
@@ -489,7 +485,6 @@ class Bot:
                     self._events[name].append(
                         Event(name=name, coro=ext_event.coro, ext=ext.ext)
                     )
-
         except Exception as e:
             raise e
 
@@ -537,7 +532,9 @@ class Bot:
         """
         data = await self.http.request(method="get", endpoint=f"/users/{user_id}")
         if data is not None:
-            return User(data, bot=self)
+            user = User(data, bot=self)
+            self.cached_users[user.id] = user
+            return user
         return
 
  

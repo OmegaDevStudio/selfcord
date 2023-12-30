@@ -12,7 +12,32 @@ if TYPE_CHECKING:
 
 
 
+class Callable:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot = bot
+        self.http: HttpClient = bot.http
+        self.update(payload)
 
+    def update(self, payload):
+        pass
+
+    async def call(self):
+        if self.type in (1,3):
+            await self.bot.gateway.call(self.id, None)
+        else:
+            await self.bot.gateway.call(self.id, self.guild_id)
+        await self.ring()
+
+    async def ring(self):
+        await self.http.request(
+            "POST", f"/channels/{self.id}/call/ring",
+            json={"recipients": None}
+        )
+
+    async def leave_call(self):
+        await self.bot.gateway.leave_call()
+
+    
 
 class Messageable:
     def __init__(self, payload: dict, bot: Bot):
@@ -129,7 +154,7 @@ class Messageable:
     
 
 
-class DMChannel(Messageable):
+class DMChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
         super().__init__(payload, bot)
         super().update(payload)
@@ -145,7 +170,7 @@ class DMChannel(Messageable):
 
 
 
-class GroupChannel(Messageable):
+class GroupChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
         super().__init__(payload, bot)
         super().update(payload)
@@ -188,7 +213,7 @@ class TextChannel(Messageable):
         self.permission_overwrites = payload.get("permission_overwrites")
 
 
-class VoiceChannel(Messageable):
+class VoiceChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
         self.http = bot.http

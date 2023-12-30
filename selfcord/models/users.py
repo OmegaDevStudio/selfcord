@@ -52,6 +52,10 @@ class User:
 
     def _remove_null(self, payload: dict):
         return {key: value for key, value in payload.items() if value is not None}
+    
+    @property
+    def profile(self):
+        return Profile()
 
     def update(self, payload: dict):
         self.username: Optional[str] = payload.get("username")

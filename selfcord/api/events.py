@@ -10,7 +10,12 @@ class Handler:
 
     async def handle_ready(self, data: dict):
         self._ready_data = data
+        with open("test.json", "a+") as f:
+            ujson.dump(data, f, indent=4)
 
+        self.bot.resume_url = data['resume_gateway_url']
+        self.bot.session_id = data['session_id']
+        
         guilds = data.get("guilds", [])
         private_channels = data.get("private_channels", [])
         users = data.get("users", [])

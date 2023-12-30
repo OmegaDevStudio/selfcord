@@ -243,7 +243,7 @@ class Bot:
 
                 await ctx.reply(result)
 
-    def on(self, event: str):
+    def on(self, event: str, mass_token: bool = False):
         """Decorator for events
 
         Args:
@@ -255,11 +255,11 @@ class Bot:
                 log.error("Not a coroutine")
                 raise Exception("Not a coroutine")
             else:
-                self._events[event].append(Event(name=event, coro=coro, ext=None))
+                self._events[event].append(Event(name=event, coro=coro, ext=None, mass_token=mass_token))
 
                 def wrapper(*args, **kwargs):
                     result = self._events[event].append(
-                        Event(name=event, coro=coro, ext=None)
+                        Event(name=event, coro=coro, ext=None, mass_token=mass_token)
                     )
 
                     return result
@@ -337,6 +337,25 @@ class Bot:
             for cmd in self.commands:
                 if cmd.mass_token:
                     mass_bot.commands.add(cmd)
+
+            for ext in self.extensions:
+                for cmd in ext.commands:
+                    if cmd.mass_token:
+                        mass_bot.commands.add(cmd)
+
+            for ext in self.extensions:
+                for name, value in ext._events.items():
+                    for item in value:
+                        if item.mass_token:
+                            mass_bot._events[name].append(item)
+
+            for name, value in self._events.items():
+                for item in value:
+                    if item.mass_token:
+                        mass_bot._events[name].append(item)
+
+
+            
             
             bots.append(mass_bot)
 

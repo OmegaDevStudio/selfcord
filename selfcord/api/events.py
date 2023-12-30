@@ -1,7 +1,7 @@
 import itertools
 from time import perf_counter
 from aioconsole import aprint
-from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd
+from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd, PresenceUpdate
 import ujson
 
 class Handler:
@@ -201,6 +201,13 @@ class Handler:
     async def handle_guild_member_list_update(self, data: dict):
         print(data)
         pass
+
+    async def handle_presence_update(self, data: dict):
+        pres = PresenceUpdate(data, self.bot)
+        if isinstance(pres.user, User):
+            pres.user.partial_update(data)
+        await self.bot.emit("presence_update",pres)
+
 
     async def handle_thread_list_sync(self, data: dict):
         pass

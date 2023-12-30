@@ -217,10 +217,11 @@ class CommandCollection:
 class Event:
     """Event object"""
 
-    def __init__(self, name: str, coro, ext: Extension) -> None:
+    def __init__(self, name: str, coro, ext: Extension, mass_token: bool = False) -> None:
         self.name: str = name
         self.coro = coro
         self.ext: Extension = ext
+        self.mass_token = mass_token
 
 
 class Extender:
@@ -264,7 +265,7 @@ class Extender:
         return decorator
 
     @classmethod
-    def on(cls, event: str):
+    def on(cls, event: str, mass_token: bool = False):
         """Decorator for events
 
         Args:
@@ -276,7 +277,7 @@ class Extender:
                 log.error("Not a coroutine")
                 raise Exception("Not a coroutine")
             else:
-                eve = Event(name=event, coro=coro, ext=cls)
+                eve = Event(name=event, coro=coro, ext=cls, mass_token=mass_token)
                 cls._events[event].append(eve)
 
                 def wrapper(*args, **kwargs):
@@ -288,7 +289,7 @@ class Extender:
         return decorator
 
     @classmethod
-    def add_cmd(cls, coro, description="", aliases=[]):
+    def add_cmd(cls, coro, description="", aliases=[], mass_token: bool = False):
         """
         Function to add commands manually without decorator
 
@@ -307,7 +308,7 @@ class Extender:
             log.error("Not a coroutine")
         else:
             cmd = Command(
-                name=name, description=description, aliases=aliases, func=coro, ext=cls
+                name=name, description=description, aliases=aliases, func=coro, ext=cls, mass_token=mass_token
             )
             cls.commands.add(cmd)
 

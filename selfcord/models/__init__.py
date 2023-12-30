@@ -21,3 +21,4 @@ from .channels import (
 )
 from .message import Message, MessageAck, MessageReactionAdd
 from .activity import Activity
+from .event_models import PresenceUpdate

@@ -16,9 +16,12 @@ class Status:
     def __init__(self, payload: dict):
         self.update(payload)
 
+    def __str__(self):
+        return f"{self.platforms} // {self.status}"
+
     def update(self, payload: dict):
-        self.platforms = payload.keys()
-        self.status = payload.values()
+        self.platforms = [k for k in payload.keys()]
+        self.status = [v for v in payload.values()]
 
 
 class Profile():

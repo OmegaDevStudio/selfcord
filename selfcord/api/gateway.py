@@ -230,8 +230,9 @@ class Gateway:
             }
             data = payload['d']
 
-            for channel in channels:
-                queries[channel.id] = item
+            # For now
+            # for channel in channels:
+            #     queries[channel.id] = item
 
             data['channel'] = queries
             

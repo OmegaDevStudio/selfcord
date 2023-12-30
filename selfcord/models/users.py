@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from .assets import Asset
+from.permissions import Permission
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -198,7 +199,7 @@ class Member(User):
 
     def update(self, payload: dict):
         self.roles: list[Role] = []
-        self.permissions = 0  # TODO: Create Permission class
+        self.permissions = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
 
     def partial_update(self, payload: dict):
         payload = self._remove_null(payload)

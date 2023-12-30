@@ -50,4 +50,15 @@ class Permission:
     CREATE_EVENTS = 1 << 44
     USE_EXTERNAL_SOUNDS = 1 << 45
     SEND_VOICE_MESSAGES = 1 << 46
+
+    def __init__(self, value: int, bot):
+        self.bot = bot
+        self.http = bot.http
+        self.permissions = []
     
+    def calculate_permissions(self, perm_value: int):
+        for key, value in vars(self).items():
+            if key.startswith("__"):
+                continue
+            if (perm_value & value) == value:
+                self.permissions.append({key: value})

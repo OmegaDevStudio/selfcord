@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from .assets import Asset
 from .channels import Convert, Messageable
 from .users import Member
+from .permissions import Permission
 if TYPE_CHECKING:
     from ..bot import Bot
 
@@ -250,7 +251,7 @@ class Role:
     def update(self, payload: dict):
         self.unicode_emoji = payload.get("unicode_emoji")
         self.position = payload.get("position")
-        self.permissions = payload.get("permissions")
+        self.permissions = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
         self.name = payload.get("name")
         self.mentionable = payload.get("mentionable")
         self.managed = payload.get("managed")

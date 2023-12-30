@@ -10,8 +10,8 @@ class Handler:
 
     async def handle_ready(self, data: dict):
         self._ready_data = data
-        with open("test.json", "a+") as f:
-            ujson.dump(data, f, indent=4)
+        # with open("test.json", "a+") as f:
+        #     ujson.dump(data, f, indent=4)
 
         self.bot.resume_url = data['resume_gateway_url']
         self.bot.session_id = data['session_id']
@@ -117,7 +117,7 @@ class Handler:
                 check_user = self.bot.fetch_user(user['user_id'])
                 if check_user is None:
                     user = User(user, self.bot)
-                    self.bot.cached_users.append(user)
+                    self.bot.cached_users[user.id] = user
                 else:
                     check_user.partial_update(user)
 
@@ -126,7 +126,7 @@ class Handler:
             check_user = self.bot.fetch_user(user['user_id'])
             if check_user is None:
                 user = User(user, self.bot)
-                self.bot.cached_users.append(user)
+                self.bot.cached_users[user.id] = user
             else:
                 check_user.partial_update(user)
 

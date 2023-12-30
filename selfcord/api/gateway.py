@@ -204,9 +204,11 @@ class Gateway:
                 break
             yield lst[: i + 1]
 
-    async def chunk_members(self, guild: Guild, channels: list[Messageable]):
-        if len(channels) > 5:
-            raise ValueError("Max 5 channels")
+    async def chunk_members(self, guild: Guild):
+        for channel in guild.channels:
+            if channel.permission_overwrites is not None:
+                print(channel.permission_overwrites.permissions)
+
         
         ranges = []
 

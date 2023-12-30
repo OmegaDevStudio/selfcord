@@ -180,9 +180,9 @@ class Guild:
                 else:
                     setattr(self, key, value)
 
-    async def get_members(self, channels: list[Messageable]):
+    async def get_members(self):
         # Doesn't work yet I'm gonna fix
-        await self.bot.gateway.chunk_members(self, channels)
+        await self.bot.gateway.chunk_members(self)
 
     async def delete(self):
         await self.http.request(

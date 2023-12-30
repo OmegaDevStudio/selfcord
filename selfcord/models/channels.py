@@ -4,6 +4,7 @@ from .message import Message
 from .assets import Asset
 import random
 import asyncio
+from .permissions import Permission
 
 if TYPE_CHECKING:
     from .users import User
@@ -210,7 +211,7 @@ class TextChannel(Messageable):
         self.name = payload.get("name")
         self.last_pin_timestamp = payload.get("last_pin_timestamp")
 
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class VoiceChannel(Messageable, Callable):
@@ -225,7 +226,7 @@ class VoiceChannel(Messageable, Callable):
         self.guild_id = payload.get("guild_id")
         self.category_id = payload.get("parent_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
         self.user_limit = payload.get("user_limit")
         self.topic = payload.get("topic")
         self.rtc_region = payload.get("rtc_region")
@@ -248,7 +249,7 @@ class Category(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class Announcement(Messageable):
@@ -263,7 +264,7 @@ class Announcement(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class AnnouncementThread(Messageable):
@@ -278,7 +279,7 @@ class AnnouncementThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class PublicThread(Messageable):
@@ -293,7 +294,7 @@ class PublicThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class PrivateThread(Messageable):
@@ -308,7 +309,7 @@ class PrivateThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class StageChannel(Messageable):
@@ -324,7 +325,7 @@ class StageChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class Directory(Messageable):
@@ -339,7 +340,7 @@ class Directory(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class ForumChannel(Messageable):
@@ -367,7 +368,7 @@ class ForumChannel(Messageable):
         self.default_forum_layout = payload.get("default_forum_layout")
         self.available_tags = payload.get("available_tags")
 
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class MediaChannel(Messageable):
@@ -382,7 +383,7 @@ class MediaChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = payload.get("permission_overwrites")
+        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
 
 
 class Convert(Messageable):

@@ -209,7 +209,7 @@ class Member(User):
 
     async def ban(self, user_id: str, reason: str = "", delete_message_seconds: int = 0):
         await self.http.request(
-            "DELETE", f"/guilds/{self.guild_id}/bans/{self.id}",
+            "PUT", f"/guilds/{self.guild_id}/bans/{self.id}",
             json={"delete_message_seconds": delete_message_seconds},
             headers={"X-Audit-Log-Reason": reason}
         )

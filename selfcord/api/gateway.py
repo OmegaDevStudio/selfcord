@@ -215,9 +215,7 @@ class Gateway:
             if len(channel.permission_overwrites) > 0:
                 for overwrite in channel.permission_overwrites:
                     if overwrite.id in [role.id for role in roles]:
-                        if overwrite.allow == role.permissions.VIEW_CHANNEL:
-                            print(channel.id)
-                            channels.append(channel)
+                        pass
 
         
         ranges = []

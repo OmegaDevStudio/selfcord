@@ -24,9 +24,21 @@ class PermissionOverwrite:
         self.allow: int = Permission(payload["allow"], self.bot)
         self.deny: int = Permission(payload["deny"], self.bot)
 
+class Channel:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot: Bot = bot
+        self.http: HttpClient = bot.http
+        self.update(payload)
+
+    def __init__(self, payload):
+        self.id = payload["id"]
+        self.type = payload["type"]
+        self.flags = payload.get("flags")
+        self.last_message_id = payload.get("last_message_id")
+        self.guild_id = payload.get("guild_id")
 
 
-class Callable:
+class Callable(Channel):
     def __init__(self, payload: dict, bot: Bot):
         self.bot: Bot = bot
         self.http: HttpClient = bot.http
@@ -53,13 +65,10 @@ class Callable:
 
     
 
-class Messageable:
+class Messageable(Channel):
     def __init__(self, payload: dict, bot: Bot):
         self.bot: Bot = bot
         self.http: HttpClient = bot.http
-        self.guild_id: str
-        self.id: str
-        self.type: int
         self.update(payload)
 
     def __repr__(self):

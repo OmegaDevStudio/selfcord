@@ -30,12 +30,17 @@ class Channel:
         self.http: HttpClient = bot.http
         self.update(payload)
 
-    def __init__(self, payload):
+    def update(self, payload):
         self.id = payload["id"]
         self.type = payload["type"]
         self.flags = payload.get("flags")
         self.last_message_id = payload.get("last_message_id")
         self.guild_id = payload.get("guild_id")
+
+    async def delete(self):
+        await self.http.request(
+            "delete", "/channels/" + self.id, json={}
+        )
 
 
 class Callable(Channel):
@@ -63,7 +68,7 @@ class Callable(Channel):
     async def leave_call(self):
         await self.bot.gateway.leave_call()
 
-    
+
 
 class Messageable(Channel):
     def __init__(self, payload: dict, bot: Bot):
@@ -77,7 +82,7 @@ class Messageable(Channel):
     def __str__(self):
         return self.name
 
-   
+
 
     def update(self, payload):
         self.id: str = payload["id"]
@@ -114,7 +119,7 @@ class Messageable(Channel):
                 msg = Message(json, self.bot)
                 await asyncio.create_task(self.delayed_delete(msg, delete_after))
                 return msg
-                
+
             return Message(json, self.bot)
 
     async def delete(self) -> Optional[Messageable]:
@@ -152,14 +157,14 @@ class Messageable(Channel):
                 msgs.append(msg)
             self.bot.cached_messages[msg.id] = msg
             n += 1
-       
+
         while n < limit:
             last = msgs[-1]
             json = await self.http.request(
                 "GET", f"/channels/{self.id}/messages?before={last.id}&limit=50",
                 headers=headers
             )
-      
+
             for message in json:
                 msg = Message(message, self.bot)
                 if bot_user_only:
@@ -169,18 +174,15 @@ class Messageable(Channel):
                     msgs.append(msg)
                 self.bot.cached_messages[msg.id] = msg
                 n += 1
-            
+
         return msgs[:limit]
-    
+
     async def purge(self, amount: int):
         msgs = await self.history(amount, bot_user_only=True)
         for i in range(0, len(msgs), 2):
             await asyncio.gather(*(msg.delete()
                                    for msg in msgs[i:i+2]))
 
-        
-            
-        
 
 
 class DMChannel(Messageable, Callable):
@@ -235,14 +237,33 @@ class TextChannel(Messageable):
         super().__init__(payload, bot)
 
     def update(self, payload):
+        self.nsfw = payload.get("nsfw")
         self.guild_id = payload.get("guild_id")
         self.category_id = payload.get("parent_id")
         self.position = payload.get("position")
         self.rate_limit_per_user = payload.get("rate_limit_per_user")
         self.name = payload.get("name")
         self.last_pin_timestamp = payload.get("last_pin_timestamp")
-        
+
         self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+
+    async def edit(self, name: str="", topic: str="", nsfw: bool=False, timeout: int=0):
+        self.name = name
+        self.nsfw = nsfw
+        self.rate_limit_per_user = timeout
+
+        await self.http.request(
+            "patch", "/channels/" + self.id, json={
+                    "name": name,
+                    "type": 0,
+                    "topic": topic,
+                    "bitrate": 64000,
+                    "user_limit": 0,
+                    "nsfw": nsfw,
+                    "flags": 0,
+                    "rate_limit_per_user": timeout
+            }
+        )
 
 
 class VoiceChannel(Messageable, Callable):

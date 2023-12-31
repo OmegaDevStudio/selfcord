@@ -15,6 +15,10 @@ class Guild:
         self.http = bot.http
         self.update(payload)
 
+    @property
+    def me(self) -> Member:
+        return self.members[0]
+
     def update(self, payload: dict):
         self.members: list[Member] = []
         self.channels: list[Messageable] = []
@@ -48,7 +52,7 @@ class Guild:
             if member is not None:
                 member = Member(member, self.bot)
                 self.members.append(member)
-                self.bot.cached_users[member.id] = member
+                
 
         self.member_count = payload.get("member_count")
         self.embedded_activities = payload.get("embedded_activities", [])
@@ -179,6 +183,10 @@ class Guild:
 
                 else:
                     setattr(self, key, value)
+    def fetch_member(self, user_id: str):
+        for member in self.members:
+            if member.id == user_id:
+                return member
 
     async def get_members(self):
         # Doesn't work yet I'm gonna fix

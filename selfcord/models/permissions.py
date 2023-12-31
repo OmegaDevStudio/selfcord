@@ -55,8 +55,10 @@ class Permission:
         self.bot = bot
         self.http = bot.http
         self.permissions = []
+        self.raw_value = value
         # print(value, bot)
         self.calculate_permissions(value)
+
     def calculate_permissions(self, perm_value: int):
         for key, value in vars(self).items():
             if key.startswith("__"):

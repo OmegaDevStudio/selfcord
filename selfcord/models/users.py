@@ -51,6 +51,14 @@ class User:
         self.http = bot.http
         self.update(payload)
 
+
+    def __str__(self):
+        return f"{self.username}#{self.discriminator} ({self.id})"
+
+    def __repr__(self):
+        return f"<User id={self.id} name={self.display_name} discriminator={self.discriminator}>"
+
+
     def _remove_null(self, payload: dict):
         return {key: value for key, value in payload.items() if value is not None}
     
@@ -68,7 +76,8 @@ class User:
         )
         self.broadcast = payload.get("broadcast")
         self.activities = payload.get("activities")
-        self.id: Optional[str] = payload.get("id")  or payload.get("user_id")
+        self.id: Optional[str] = payload.get("id") or payload.get("user_id")
+
         self.discriminator: Optional[str] = payload.get("discriminator")
         self.global_name: Optional[str] = payload.get("global_name")
         self.avatar: Optional[Asset] = (
@@ -196,11 +205,25 @@ class Member(User):
         self.http = bot.http
         super().__init__(payload, bot)
         super().update(payload)
+        self.update(payload)
+
+    @property
+    def guild(self):
+        return self.bot.fetch_guild(self.guild_id)
+
 
     def update(self, payload: dict):
         self.roles: list[Role] = []
+        self.guild_id: str = payload.get("guild_id")
+        self.joined_at: str = payload.get("joined_at")
+        self.premium_since: str = payload.get("premium_since")
+        self.deaf: bool = payload.get("deaf")
+        self.mute: bool = payload.get("mute")
+        self.pending: bool = payload.get("pending")
+        self.nick: str = payload.get("nick")
+        self.communication_disabled_until: str = payload.get("communication_disabled_until")
         self.permissions = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
-
+        
     def partial_update(self, payload: dict):
         payload = self._remove_null(payload)
         super().partial_update(payload)

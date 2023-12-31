@@ -19,7 +19,7 @@ class Handler:
         guilds = data.get("guilds", [])
         private_channels = data.get("private_channels", [])
         users = data.get("users", [])
-        relationships = data.get("relationship", [])
+        relationships = data.get("relationships", [])
         merged_members = data.get("merged_members", [])
         for guild, channel, user, relation in itertools.zip_longest(
             guilds,
@@ -45,12 +45,13 @@ class Handler:
                 if check_user is None:
                     user = User(relation, self.bot)
                     self.bot.cached_users[user.id] = user
+                
                     if relation["type"] == 1:
                         self.bot.user.friends.append(user)
                     if relation["type"] == 2:
                         self.bot.user.blocked.append(user)
                 else:
-                    check_user.partial_update(user)
+                    check_user.partial_update(relation)
 
         await self.bot.emit("ready", perf_counter() - self.bot.startup)
 
@@ -98,14 +99,35 @@ class Handler:
                 temp_guilds.setdefault(str(index), []).append(guild)
                 # print(temp_guilds[str(index)])
                 # print(index, guild)
+
                 check_guild = self.bot.fetch_guild(guild['id'])
                 if check_guild is None:
                     guild = Guild(guild, self.bot)
                     self.bot.user.guilds.append(guild)
-                    guild.members.append(temp_members[str(index)])
+                    for member in temp_members[str(index)]:
+                        check_user = guild.fetch_member(member['user_id'])
+                        if check_user is None:
+                            user = Member(member, self.bot)
+                            
+                            guild.members.append(user)
+                        else:
+                            check_user.partial_update(member)
+                            
+                            guild.members.append(check_user)
+
                 else:
                     check_guild.partial_update(guild)
-                    check_guild.members.append(temp_members[str(index)])
+                    for member in temp_members[str(index)]:
+                        check_user = check_guild.fetch_member(member['user_id'])
+                        if check_user is None:
+                            user = Member(member, self.bot)
+                          
+                            check_guild.members.append(user)
+                        else:
+                            check_user.partial_update(member)
+                            
+                            check_guild.members.append(check_user)
+
 
         # DISCORD BAD
         merged_presences = data.get("merged_presences", {})

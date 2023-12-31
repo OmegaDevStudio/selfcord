@@ -12,10 +12,23 @@ if TYPE_CHECKING:
     from ..api import HttpClient
 
 
+class PermissionOverwrite:
+    def __init__(self, payload: dict, bot: Bot):
+        self.bot: Bot = bot
+        self.http = bot.http
+        self.update(payload)
+
+    def update(self, payload: dict):
+        self.id: str = payload["id"]
+        self.type: int = payload["type"]
+        self.allow: int = Permission(payload["allow"], self.bot)
+        self.deny: int = Permission(payload["deny"], self.bot)
+
+
 
 class Callable:
     def __init__(self, payload: dict, bot: Bot):
-        self.bot = bot
+        self.bot: Bot = bot
         self.http: HttpClient = bot.http
         self.update(payload)
 
@@ -42,11 +55,20 @@ class Callable:
 
 class Messageable:
     def __init__(self, payload: dict, bot: Bot):
-        self.bot = bot
+        self.bot: Bot = bot
         self.http: HttpClient = bot.http
         self.guild_id: str
         self.id: str
         self.type: int
+        self.update(payload)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} id={self.id}>"
+
+    def __str__(self):
+        return self.name
+
+   
 
     def update(self, payload):
         self.id: str = payload["id"]
@@ -152,9 +174,6 @@ class Messageable:
         
 
 
-    
-
-
 class DMChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
         super().__init__(payload, bot)
@@ -173,8 +192,8 @@ class DMChannel(Messageable, Callable):
 
 class GroupChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
-        super().__init__(payload, bot)
         super().update(payload)
+        super().__init__(payload, bot)
         self.bot = bot
         self.http = bot.http
         self.update(payload)
@@ -196,6 +215,9 @@ class GroupChannel(Messageable, Callable):
 
 
 class TextChannel(Messageable):
+    """
+    This class is used to represent a text channel in Discord.
+    """
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
         self.http = bot.http
@@ -210,8 +232,8 @@ class TextChannel(Messageable):
         self.rate_limit_per_user = payload.get("rate_limit_per_user")
         self.name = payload.get("name")
         self.last_pin_timestamp = payload.get("last_pin_timestamp")
-
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class VoiceChannel(Messageable, Callable):
@@ -226,7 +248,7 @@ class VoiceChannel(Messageable, Callable):
         self.guild_id = payload.get("guild_id")
         self.category_id = payload.get("parent_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
         self.user_limit = payload.get("user_limit")
         self.topic = payload.get("topic")
         self.rtc_region = payload.get("rtc_region")
@@ -249,7 +271,7 @@ class Category(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class Announcement(Messageable):
@@ -264,7 +286,7 @@ class Announcement(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class AnnouncementThread(Messageable):
@@ -279,7 +301,7 @@ class AnnouncementThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class PublicThread(Messageable):
@@ -294,7 +316,7 @@ class PublicThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class PrivateThread(Messageable):
@@ -309,7 +331,7 @@ class PrivateThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class StageChannel(Messageable):
@@ -325,7 +347,7 @@ class StageChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class Directory(Messageable):
@@ -340,7 +362,7 @@ class Directory(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class ForumChannel(Messageable):
@@ -368,7 +390,7 @@ class ForumChannel(Messageable):
         self.default_forum_layout = payload.get("default_forum_layout")
         self.available_tags = payload.get("available_tags")
 
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
 
 
 class MediaChannel(Messageable):
@@ -383,7 +405,9 @@ class MediaChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = Permission(payload['permission_overwrites'], self.bot) if payload.get("permission_overwrites") is not None else None
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+
+
 
 
 class Convert(Messageable):

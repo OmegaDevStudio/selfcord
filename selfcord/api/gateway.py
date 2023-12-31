@@ -114,6 +114,8 @@ class Gateway:
             await self.recv_json()
 
     async def close(self):
+        """This function closes the websocket
+        """
         self.alive = False
         if self.ws:
             await self.ws.close()
@@ -205,9 +207,17 @@ class Gateway:
             yield lst[: i + 1]
 
     async def chunk_members(self, guild: Guild):
+        roles = guild.me.roles
+        print(roles)
+        channels = []
         for channel in guild.channels:
-            if channel.permission_overwrites is not None:
-                print(channel.permission_overwrites.permissions)
+            print(channel.permission_overwrites)
+            if len(channel.permission_overwrites) > 0:
+                for overwrite in channel.permission_overwrites:
+                    if overwrite.id in [role.id for role in roles]:
+                        if overwrite.allow == role.permissions.VIEW_CHANNEL:
+                            print(channel.id)
+                            channels.append(channel)
 
         
         ranges = []
@@ -231,8 +241,8 @@ class Gateway:
             data = payload['d']
 
             # For now
-            # for channel in channels:
-            #     queries[channel.id] = item
+            for channel in channels:
+                queries[channel.id] = item
 
             data['channel'] = queries
             

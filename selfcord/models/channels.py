@@ -94,11 +94,10 @@ class Messageable(Channel):
             unixts = time.time()
         else:
             unixts = time.mktime(date.timetuple())
-        return int(unixts)*1000-1420070400000)*4194304
+        return (int(unixts)*1000-1420070400000)*4194304
 
     @property
     def nonce(self) -> int:
-        """YES IM LAZY"""
         return self.calc_nonce()
 
     async def delayed_delete(self, message, time):

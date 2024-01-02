@@ -47,6 +47,8 @@ class Gateway:
             if self.decompress else 
             "wss://gateway.discord.gg/?encoding=json&v=9"
         )
+        self.resume_url: Optional[str]
+        self.session_id: Optional[str]
 
 
     async def send_json(self, payload: dict):
@@ -209,14 +211,17 @@ class Gateway:
     async def chunk_members(self, guild: Guild):
         roles = guild.me.roles
         
-        print(roles, guild.me.id)
         channels = []
         for channel in guild.channels:
             if len(channel.permission_overwrites) > 0:
                 for overwrite in channel.permission_overwrites:
-                    if overwrite.id in [role.id for role in roles]:
-                        pass
-
+                    if (overwrite.id == guild.id) or (overwrite.id in [role.id for role in roles]):
+                        for permission in overwrite.allow.permissions:
+                            for name, value in permission.items():
+                                if name == "VIEW_CHANNEL":
+                                    if value:
+                                        print(channel.name, "has view channel permission")
+                            channels.append(channel)
         
         ranges = []
 

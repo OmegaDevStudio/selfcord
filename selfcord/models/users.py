@@ -214,16 +214,12 @@ class Member(User):
 
     def update(self, payload: dict):
         self.roles: list[Role] = []
+        self.permissions = None
         for role in payload.get("roles", []):
             role = self.bot.fetch_role(role)
-            self.roles.append(role)
+            if role is not None:
+                self.roles.append(role)
         
-            guild = self.bot.fetch_guild(payload.get("guild_id", ""))
-            if guild is not None:
-                for role in guild.roles:
-                    if role.id == role:
-                        self.roles.append(role)
-                        break
         self.guild_id: Optional[str] = payload.get("guild_id")
         self.joined_at: Optional[str] = payload.get("joined_at")
         self.premium_since: Optional[str] = payload.get("premium_since")
@@ -232,7 +228,7 @@ class Member(User):
         self.pending: Optional[bool] = payload.get("pending")
         self.nick: Optional[str] = payload.get("nick")
         self.communication_disabled_until: Optional[str] = payload.get("communication_disabled_until")
-        self.permissions: Optional[Permission] = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
+        
         
     def partial_update(self, payload: dict):
         payload = self._remove_null(payload)

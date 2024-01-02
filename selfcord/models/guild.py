@@ -42,15 +42,20 @@ class Guild:
                 self.stickers.append(Sticker(sticker, self.bot))
 
             if role is not None:
-                self.roles.append(Role(role, self.bot))
+                role.update({"guild_id": self.id})
+                role = Role(role, self.bot)
+
+                self.roles.append(role)
 
             if channel is not None:
+                channel.update({"guild_id": self.id})
                 chan = Convert(channel, self.bot)
                 self.channels.append(chan)
              
                 self.bot.cached_channels[chan.id] = chan
 
             if member is not None:
+                member.update({"guild_id": self.id})
                 member = Member(member, self.bot)
                 self.members.append(member)
                 
@@ -332,6 +337,7 @@ class Role:
         self.mentionable = payload.get("mentionable")
         self.managed = payload.get("managed")
         self.id = payload["id"]
+        self.guild_id = payload.get("guild_id", "")
         self.icon = payload.get("icon")
         self.hoist = payload.get("hoist")
         self.flags = payload.get("flags")

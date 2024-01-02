@@ -234,6 +234,7 @@ class Messageable(Channel):
                 min=min,
                 offset=n
             )
+            pass
             if msg is not None:
                 if len(msg) == 0:
                     break

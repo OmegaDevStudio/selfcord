@@ -1,8 +1,9 @@
 from __future__ import annotations
 import itertools
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Literal, AsyncGenerator
 from .assets import Asset
 from .channels import Convert, Messageable
+from .message import Message
 from .users import Member
 from .permissions import Permission
 if TYPE_CHECKING:
@@ -183,10 +184,74 @@ class Guild:
 
                 else:
                     setattr(self, key, value)
+
     def fetch_member(self, user_id: str):
         for member in self.members:
             if member.id == user_id:
                 return member
+            
+    async def search_base(
+        self,
+        content: Optional[str] = None,
+        has: Optional[Literal["link", "embed", "file", "video", "image", "sound"]] = None,
+        from_: Optional[str] = None,
+        mentions: Optional[str] = None,
+        max: Optional[int] = None,
+        min: Optional[int] = None,
+        channel_id: Optional[str] = None,
+        offset: Optional[int] = None
+    ) -> Optional[list[Message]]:
+        params = {
+            "content": content,
+            "has": has,
+            "from": from_,
+            "mentions": mentions,
+            "max": max,
+            "min": min,
+            "channel_id": channel_id,
+            "offset": offset
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        json = await self.http.request(
+            "GET", f"/guilds/{self.id}/messages/search", params=params
+        )
+        if json is not None:
+            return [Message(message, self.bot) for messages in json['messages'] for message in messages]
+
+    async def search(
+        self,
+        content: Optional[str] = None,
+        has: Optional[Literal["link", "embed", "file", "video", "image", "sound"]] = None,
+        from_: Optional[str] = None,
+        mentions: Optional[str] = None,
+        max: Optional[int] = None,
+        min: Optional[int] = None,
+        channel_id: Optional[str] = None,
+        amount: int = 25
+    ) -> list[Message]:
+        n = 0
+        msgs = []
+        while n < amount:
+            msg = await self.search_base(
+                content=content,
+                has=has,
+                from_=from_,
+                mentions=mentions,
+                max=max,
+                min=min,
+                channel_id=channel_id,
+                offset=n
+            )
+            if msg is not None:
+                if len(msg) == 0:
+                    break
+                n += len(msg)
+                msgs.extend(msg)
+
+        return msgs
+        
+
+
 
     async def get_members(self):
         # Doesn't work yet I'm gonna fix

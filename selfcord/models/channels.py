@@ -232,7 +232,6 @@ class Messageable(Channel):
                 mentions=mentions,
                 max=max,
                 min=min,
-                channel_id=channel_id,
                 offset=n
             )
             if msg is not None:

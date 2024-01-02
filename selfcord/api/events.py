@@ -73,8 +73,7 @@ class Handler:
             if members is not None:
                 index = self._ready_data.get("merged_members", []).index(members)
                 temp_members.setdefault(str(index), []).extend(members)
-                print(temp_members[str(index)])
-
+            
                 for member in members:
                     # print(member['roles'], member['user_id'])
                     check_user = self.bot.fetch_user(member['user_id'])

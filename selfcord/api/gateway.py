@@ -208,10 +208,10 @@ class Gateway:
 
     async def chunk_members(self, guild: Guild):
         roles = guild.me.roles
-        print(roles)
+        
+        print(roles, guild.me.id)
         channels = []
         for channel in guild.channels:
-            print(channel.permission_overwrites)
             if len(channel.permission_overwrites) > 0:
                 for overwrite in channel.permission_overwrites:
                     if overwrite.id in [role.id for role in roles]:

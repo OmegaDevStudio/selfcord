@@ -117,9 +117,10 @@ class HttpClient:
                 total=10000, connect=10000, sock_read=10000, sock_connect=10000
             ),
             connector=aiohttp.TCPConnector(
-                limit=0, limit_per_host=0, ttl_dns_cache=300
+                limit=0, limit_per_host=0, ttl_dns_cache=300,
             ),
             headers=headers,
+            trust_env=True,
         ) as session:
             request = getattr(session, method.lower())
             while True:

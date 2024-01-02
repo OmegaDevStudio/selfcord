@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
-from .users import User, Member
+from .users import User
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -32,6 +32,8 @@ class Message:
             if payload.get("author") is not None
             else None
         )
+        if self.author is not None:
+            self.bot.cached_users[self.author.id] = self.author
         # we will fix later 
         # self.member = Member(payload.get("member"), self.bot)
         self.flags: int = payload.get("flags", 0)

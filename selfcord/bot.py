@@ -27,7 +27,8 @@ from .api import Gateway, HttpClient
 from .models import (
     Client, DMChannel, GroupChannel, Guild,
     Message, TextChannel, User, VoiceChannel,
-    Capabilities, Convert, Messageable
+    Capabilities, Convert, Messageable,
+    Role
 )
 from .utils import (
     Command, CommandCollection, Context, Event, Extension,
@@ -517,6 +518,13 @@ class Bot:
             if guild.id == guild_id:
                 return guild
         return
+    
+    def fetch_role(self, role_id: str) -> Optional[Role]:
+        for guild in self.user.guilds:
+            for role in guild.roles:
+                if role.id == role_id:
+                    return role
+        return
 
 
     async def get_user(self, user_id: str) -> Optional[User]:
@@ -536,5 +544,20 @@ class Bot:
             self.cached_users[user.id] = user
             return user
         return
+    
+    async def join_invite(self, invite_code: str) -> Optional[Guild|GroupChannel]:
+        json = await self.http.request(method="post", endpoint=f"/invites/{invite_code}")
+
+        if json is not None:
+            if "guild" in json:
+                guild = Guild(json["guild"], bot=self)
+                self.user.guilds.append(guild)
+                return guild
+            elif "channel" in json:
+                channel = GroupChannel(json["channel"], bot=self)
+                self.user.private_channels.append(channel)
+                self.cached_channels[channel.id] = channel
+                return channel
+
 
  

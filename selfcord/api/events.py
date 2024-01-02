@@ -69,30 +69,38 @@ class Handler:
             self._ready_data.get("merged_members", []),
             data.get("merged_members", {}),
         ):
+            # To get our own data
             if members is not None:
                 index = self._ready_data.get("merged_members", []).index(members)
                 temp_members.setdefault(str(index), []).extend(members)
+                print(temp_members[str(index)])
 
                 for member in members:
+                    # print(member['roles'], member['user_id'])
                     check_user = self.bot.fetch_user(member['user_id'])
                     if check_user is None:
-                        member = Member(member, self.bot)
+                        member = User(member, self.bot)
                         self.bot.cached_users[member.id] = member
                     else:
                         check_user.partial_update(member)
-            
+                
+            # To get other data
             if extra_members is not None:
                 index = data.get("merged_members", []).index(extra_members)
                 temp_members.setdefault(str(index), []).extend(extra_members)
 
                 for member in extra_members:
+
                     check_user = self.bot.fetch_user(member['user_id'])
                     if check_user is None:
-                        member = Member(member, self.bot)
+                        member = User(member, self.bot)
                         self.bot.cached_users[member.id] = member
                     else:
                         check_user.partial_update(member)
+
             # DISCORD BAD
+            # Add everything to a Guild
+            # Discord bad
             if guild is not None:
                 guilds: list = data.get("guilds", [])
                 index = guilds.index(guild)
@@ -108,24 +116,22 @@ class Handler:
                         check_user = guild.fetch_member(member['user_id'])
                         if check_user is None:
                             user = Member(member, self.bot)
-                            
                             guild.members.append(user)
+                  
                         else:
                             check_user.partial_update(member)
                             
                             guild.members.append(check_user)
-
+                  
                 else:
                     check_guild.partial_update(guild)
                     for member in temp_members[str(index)]:
                         check_user = check_guild.fetch_member(member['user_id'])
                         if check_user is None:
                             user = Member(member, self.bot)
-                          
                             check_guild.members.append(user)
                         else:
                             check_user.partial_update(member)
-                            
                             check_guild.members.append(check_user)
 
 
@@ -142,7 +148,7 @@ class Handler:
                     self.bot.cached_users[user.id] = user
                 else:
                     check_user.partial_update(user)
-
+      
         friends = merged_presences.get("friends")
         for user in friends:
             check_user = self.bot.fetch_user(user['user_id'])
@@ -157,8 +163,15 @@ class Handler:
             members = temp_members[str(index)]
             guild = self.bot.fetch_guild(indexed_guild[0]['id'])
             if guild is not None:
-                guild.members.extend(members)
-                guild.partial_update(indexed_guild[0])
+                for member in members:
+                    check_user = guild.fetch_member(member['user_id'])
+                    if check_user is None:
+                        member = Member(member, self.bot)
+                        guild.members.append(member)
+                    else:
+                        check_user.partial_update(member)
+                        guild.members.append(check_user)
+            
 
 
         await self.bot.inbuilt_commands()

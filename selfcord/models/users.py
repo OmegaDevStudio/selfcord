@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from .assets import Asset
-from.permissions import Permission
+from .permissions import Permission
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -214,6 +214,16 @@ class Member(User):
 
     def update(self, payload: dict):
         self.roles: list[Role] = []
+        for role in payload.get("roles", []):
+            role = self.bot.fetch_role(role)
+            self.roles.append(role)
+        
+            guild = self.bot.fetch_guild(payload.get("guild_id", ""))
+            if guild is not None:
+                for role in guild.roles:
+                    if role.id == role:
+                        self.roles.append(role)
+                        break
         self.guild_id: str = payload.get("guild_id")
         self.joined_at: str = payload.get("joined_at")
         self.premium_since: str = payload.get("premium_since")

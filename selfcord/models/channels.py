@@ -4,6 +4,8 @@ from .message import Message
 from .assets import Asset
 import random
 import asyncio
+import datetime
+import time
 from .permissions import Permission
 
 if TYPE_CHECKING:
@@ -82,18 +84,22 @@ class Messageable(Channel):
     def __str__(self):
         return self.name
 
-
-
     def update(self, payload):
         self.id: str = payload["id"]
         self.type: int = int(payload["type"])
         self.flags = payload.get("flags")
         self.last_message_id: Optional[str] = payload.get("last_message_id")
 
+    def calc_nonce(self, date="now"):
+        if date == "now":
+            unixts = time.time()
+        else:
+            unixts = time.mktime(date.timetuple())
+        return (int(unixts)*1000-1420070400000)*4194304
+
     @property
     def nonce(self) -> int:
-        """YES IM LAZY"""
-        return random.randint(100000, 99999999)
+        return self.calc_nonce()
 
     async def delayed_delete(self, message, time):
         await asyncio.sleep(time)
@@ -105,9 +111,7 @@ class Messageable(Channel):
         if self.type in (1, 3):
             headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
         else:
-            headers = {
-                "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
-            }
+            headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
         json = await self.http.request(
             "POST",
             f"/channels/{self.id}/messages",

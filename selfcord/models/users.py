@@ -224,15 +224,15 @@ class Member(User):
                     if role.id == role:
                         self.roles.append(role)
                         break
-        self.guild_id: str = payload.get("guild_id")
-        self.joined_at: str = payload.get("joined_at")
-        self.premium_since: str = payload.get("premium_since")
-        self.deaf: bool = payload.get("deaf")
-        self.mute: bool = payload.get("mute")
-        self.pending: bool = payload.get("pending")
-        self.nick: str = payload.get("nick")
-        self.communication_disabled_until: str = payload.get("communication_disabled_until")
-        self.permissions = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
+        self.guild_id: Optional[str] = payload.get("guild_id")
+        self.joined_at: Optional[str] = payload.get("joined_at")
+        self.premium_since: Optional[str] = payload.get("premium_since")
+        self.deaf: bool = payload.get("deaf", False)
+        self.mute: bool = payload.get("mute", False)
+        self.pending: Optional[bool] = payload.get("pending")
+        self.nick: Optional[str] = payload.get("nick")
+        self.communication_disabled_until: Optional[str] = payload.get("communication_disabled_until")
+        self.permissions: Optional[Permission] = Permission(payload['permissions'], self.bot) if payload.get("permissions") is not None else None
         
     def partial_update(self, payload: dict):
         payload = self._remove_null(payload)

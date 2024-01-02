@@ -216,6 +216,9 @@ class Guild:
             "GET", f"/guilds/{self.id}/messages/search", params=params
         )
         if json is not None:
+            for messages in json['messages']:
+                for message in messages:
+                    self.bot.cached_messages[message.id] = Message(message, self.bot)
             return [Message(message, self.bot) for messages in json['messages'] for message in messages]
 
     async def search(

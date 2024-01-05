@@ -322,7 +322,7 @@ class Bot:
         
 
     async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
-        bots = []
+        self.bots = []
         rmv = []
         for token in tokens:
 
@@ -354,7 +354,7 @@ class Bot:
                         rmv.append(item)
                         mass_bot._events[name].append(item)
             
-            bots.append(mass_bot)
+            self.bots.append(mass_bot)
         for rm in rmv:
             try:
                 if isinstance(rm, Command):
@@ -366,7 +366,7 @@ class Bot:
 
         self.tokens = await asyncio.gather(*(
             bot.runner(token, True)
-            for token, bot in zip(tokens, bots)
+            for token, bot in zip(tokens, self.bots)
         ))
 
     def add_cmd(self, coro, description="", aliases=[]):

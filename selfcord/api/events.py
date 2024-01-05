@@ -164,11 +164,14 @@ class Handler:
             if guild is not None:
                 for member in members:
                     check_user = guild.fetch_member(member['user_id'])
+        
                     if check_user is None:
                         member = Member(member, self.bot)
+                        
                         guild.members.append(member)
                     else:
                         check_user.partial_update(member)
+                        
                         guild.members.append(check_user)
             
 

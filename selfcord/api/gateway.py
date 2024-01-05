@@ -220,8 +220,22 @@ class Gateway:
                             for name, value in permission.items():
                                 if name == "VIEW_CHANNEL":
                                     if value:
-                                        print(channel.name, "has view channel permission")
+                                        print(channel.name, "has view channel permission, original")
+                                        channels.append(channel)
+                                        break
+  
+    
+                    for permission in overwrite.deny.permissions:
+                        for name, value in permission.items():
+                            if name == "VIEW_CHANNEL":
+                                break
+                        else:
+                            print(channel.name, "has view channel permission")
                             channels.append(channel)
+                            break
+        print(len(channels))
+
+
         
         ranges = []
 

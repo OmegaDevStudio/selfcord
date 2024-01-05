@@ -235,7 +235,14 @@ class Member(User):
         super().partial_update(payload)
         for key, value in payload.items():
             if hasattr(self, key):
-                setattr(self, key, value)
+                if key == "roles":
+                    self.roles = []
+                    for role in value:
+                        role = self.bot.fetch_role(role)
+                        if role is not None:
+                            self.roles.append(role)
+                else:
+                    setattr(self, key, value)
 
 
     async def kick(self, user_id: str, reason: str = ""):

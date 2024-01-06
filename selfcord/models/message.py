@@ -27,6 +27,8 @@ class Message:
         self.channel: Optional[Messageable] = self.bot.fetch_channel(self.channel_id)
         self.guild_id: str = payload.get("guild_id", "")
         self.guild: Optional[Guild] = self.bot.fetch_guild(self.guild_id)
+        if payload.get("author") is None:
+            print(payload)
         self.author: Optional[User] = (
             User(payload['author'], self.bot)
             if payload.get("author") is not None

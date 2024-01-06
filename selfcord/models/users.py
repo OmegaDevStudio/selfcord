@@ -92,7 +92,7 @@ class User:
         )
         self.banner_color: Optional[str] = payload.get("banner_color")
         self.accent_color: Optional[str] = payload.get("accent_color")
-        self.display_name: Optional[str] = payload.get("global_name")
+        self.global_name: Optional[str] = payload.get("global_name")
         self.flags: int = payload.get("flags", 0)
         self.avatar_decoration: Optional[str] = payload.get("avatar_decoration")
         self.is_bot = payload.get("bot", False)

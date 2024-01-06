@@ -262,8 +262,11 @@ class DMChannel(Messageable, Callable):
         self.recipient: Optional[User] = self.bot.fetch_user(
             payload["recipient_ids"][0] if payload.get("recipient_ids") is not None else ""
         )
+        self.recipient_id = payload['recipient_ids'][0]
         self.is_spam: Optional[bool] = payload.get("is_spam")
 
+    def get_user(self):
+        self.recipient = self.bot.fetch_user(self.recipient_id)
 
 
 class GroupChannel(Messageable, Callable):

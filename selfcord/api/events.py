@@ -1,7 +1,7 @@
 import itertools
 from time import perf_counter
 from aioconsole import aprint
-from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd, PresenceUpdate
+from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd, PresenceUpdate, DMChannel
 import ujson
 
 class Handler:
@@ -174,6 +174,9 @@ class Handler:
                         
                         guild.members.append(check_user)
             
+        for channel in self.bot.user.private_channels:
+            if isinstance(channel, DMChannel):
+                channel.get_user()
 
 
         await self.bot.inbuilt_commands()
@@ -190,7 +193,7 @@ class Handler:
     async def handle_message_update(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
-        await self.bot.emit("message", message)
+        await self.bot.emit("message_update", message)
 
     async def handle_message_ack(self, data: dict):
         ack = MessageAck(data, self.bot)

@@ -62,9 +62,12 @@ class User:
     def _remove_null(self, payload: dict):
         return {key: value for key, value in payload.items() if value is not None}
     
-    @property
-    def profile(self):
-        return Profile()
+
+    
+    async def profile(self) -> Optional[Profile]:
+        resp = await self.http.request("GET", f"/users/{self.id}/profile?with_mutual_guilds=True")
+        if resp is not None:
+            return Profile(resp['user']['id'], resp)
 
     def update(self, payload: dict):
         self.username: Optional[str] = payload.get("username")

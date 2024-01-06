@@ -16,9 +16,9 @@ class Message:
     @property
     def link(self):
         if msg.guild.id:
-            link = f"https://discord.com/channels/{msg.guild_id}/{msg.channel_id}/{msg.id}"
+            link = f"https://discord.com/channels/{self.guild_id}/{self.channel_id}/{self.id}"
         else:
-            link = f"https://discord.com/channels/@me/{msg.channel_id}/{msg.id}"
+            link = f"https://discord.com/channels/@me/{self.channel_id}/{self.id}"
         return link
 
     def update(self, payload: dict):

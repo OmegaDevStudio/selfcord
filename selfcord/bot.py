@@ -85,6 +85,7 @@ class Bot:
         self.user: Client
         self.eval: bool = eval
         self.token_leader = token_leader
+        self.bots = []
         if self.token_leader is not None:
             self.userbot: bool = True
         else:
@@ -322,7 +323,6 @@ class Bot:
         
 
     async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
-        self.bots = []
         rmv = []
         for token in tokens:
 

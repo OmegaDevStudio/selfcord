@@ -50,6 +50,7 @@ class Guild:
             if channel is not None:
                 channel.update({"guild_id": self.id})
                 chan = Convert(channel, self.bot)
+                
                 self.channels.append(chan)
              
                 self.bot.cached_channels[chan.id] = chan

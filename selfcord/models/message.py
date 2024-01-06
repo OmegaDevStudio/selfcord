@@ -13,6 +13,14 @@ class Message:
         self.http = bot.http
         self.update(data)
 
+    @property
+    def link(self):
+        if msg.guild.id:
+            link = f"https://discord.com/channels/{msg.guild_id}/{msg.channel_id}/{msg.id}"
+        else:
+            link = f"https://discord.com/channels/@me/{msg.channel_id}/{msg.id}"
+        return link
+
     def update(self, payload: dict):
         self.id: Optional[str] = payload.get("id")
         self.content: Optional[str] = payload.get("content")
@@ -27,8 +35,8 @@ class Message:
         self.channel: Optional[Messageable] = self.bot.fetch_channel(self.channel_id)
         self.guild_id: str = payload.get("guild_id", "")
         self.guild: Optional[Guild] = self.bot.fetch_guild(self.guild_id)
-        if payload.get("author") is None:
-            print(payload)
+        # if payload.get("author") is None:
+        #     print(payload)
         self.author: Optional[User] = (
             User(payload['author'], self.bot)
             if payload.get("author") is not None

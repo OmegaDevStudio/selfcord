@@ -15,7 +15,7 @@ class Message:
 
     @property
     def link(self):
-        if msg.guild.id:
+        if self.guild_id is not None:
             link = f"https://discord.com/channels/{self.guild_id}/{self.channel_id}/{self.id}"
         else:
             link = f"https://discord.com/channels/@me/{self.channel_id}/{self.id}"

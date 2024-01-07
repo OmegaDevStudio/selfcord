@@ -151,6 +151,8 @@ class Messageable(Channel):
             headers=headers
         )
         msgs = []
+        if json is None:
+            return msgs
 
         for message in json:
             msg = Message(message, self.bot)
@@ -166,6 +168,9 @@ class Messageable(Channel):
             return msgs
 
         while n < limit:
+            if json is None:
+                return msgs
+            
             if len(json) == 0:
                 return msgs
             last = msgs[-1]

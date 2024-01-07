@@ -31,10 +31,11 @@ class Profile():
         self.update(payload)
 
     def update(self, payload: dict):
-        self.bio: Optional[str] = payload.get("bio")
-        self.accent_color: Optional[str] = payload.get("accent_color")
-        self.pronouns: Optional[str] = payload.get("pronouns")
-        self.profile_effect: Optional[str] = payload.get("profile_effect")
+        profile = payload["user_profile"]
+        self.bio: Optional[str] = profile.get("bio")
+        self.accent_color: Optional[str] = profile.get("accent_color")
+        self.pronouns: Optional[str] = profile.get("pronouns")
+        self.profile_effect: Optional[str] = profile.get("profile_effect")
         self.banner: Optional[Asset] = (
             Asset(self.id, payload["banner"]).from_avatar()
             if payload.get("banner") is not None and self.id is not None
@@ -43,6 +44,8 @@ class Profile():
         self.theme_colors: Optional[list[int]] = payload.get("theme_colors")
         self.popout_animation_particle_type: Optional[str] = payload.get("popout_animation_particle_type")
         self.emoji: Optional[str] = payload.get("emoji")
+        self.mutual_guilds = payload.get("mutual_guilds", [])
+        
 
 
 class User:
@@ -68,6 +71,11 @@ class User:
         resp = await self.http.request("GET", f"/users/{self.id}/profile?with_mutual_guilds=True")
         if resp is not None:
             return Profile(resp['user']['id'], resp)
+        else:
+            resp = await self.http.request("GET", f"/users/{self.id}/profile?with_mutual_guilds=False")
+            if resp is not None:
+                return Profile(resp['user']['id'], resp)
+
 
     def update(self, payload: dict):
         self.username: Optional[str] = payload.get("username")

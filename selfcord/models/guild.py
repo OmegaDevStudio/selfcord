@@ -50,7 +50,7 @@ class Guild:
             if channel is not None:
                 channel.update({"guild_id": self.id})
                 chan = Convert(channel, self.bot)
-                
+
                 self.channels.append(chan)
              
                 self.bot.cached_channels[chan.id] = chan
@@ -338,7 +338,7 @@ class Role:
         self.mentionable = payload.get("mentionable")
         self.managed = payload.get("managed")
         self.id = payload["id"]
-        self.guild_id = payload.get("guild_id", "")
+        self.guild_id = payload.get("guild_id")
         self.icon = payload.get("icon")
         self.hoist = payload.get("hoist")
         self.flags = payload.get("flags")

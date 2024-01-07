@@ -105,6 +105,7 @@ class Bot:
         
     async def runner(self, token: str, multi_token: bool = False, wait: int = 0):
         data = await self.http.static_login(token)
+        self.token = token
         if data is not None:
             self.user = Client(data, self)
             
@@ -116,6 +117,7 @@ class Bot:
                     await asyncio.sleep(wait)
                     return self.user
             except Exception as e:
+                await self.gateway.close()
                 raise e
 
     def run(self, token: str):
@@ -129,6 +131,7 @@ class Bot:
         try: 
             asyncio.run(self.runner(token))
         except Exception as e:
+            self.gateway.alive = False
             raise e
 
     @property
@@ -341,26 +344,12 @@ class Bot:
                     rmv.append(cmd)
                     mass_bot.commands.add(cmd)
 
-            for ext in self.extensions:
-                for name, value in ext._events.items():
-                    for item in value:
-                        if item.mass_token:
-                            rmv.append(item)
-                            mass_bot._events[name].append(item)
-
-            for name, value in self._events.items():
-                for item in value:
-                    if item.mass_token:
-                        rmv.append(item)
-                        mass_bot._events[name].append(item)
+            
             
             self.bots.append(mass_bot)
         for rm in rmv:
             try:
-                if isinstance(rm, Command):
-                    self.commands.remove(rm)
-                else:
-                    self._events.pop(rm.name)
+                self.commands.remove(rm)
             except:
                 pass
 

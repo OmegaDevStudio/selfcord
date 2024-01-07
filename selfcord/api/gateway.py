@@ -107,14 +107,17 @@ class Gateway:
             extra_headers={"user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0"},
             read_limit=1000000, max_queue=100, write_limit=1000000,
         )
+        self.alive = True
 
     async def start(self, token: str):
         await self.connect()
-        self.alive = True
+        
         self.token = token
         while self.alive:
-            await self.recv_json()
-
+            try:
+                await self.recv_json()
+            except Exception:
+                await self.close()
     async def close(self):
         """This function closes the websocket
         """

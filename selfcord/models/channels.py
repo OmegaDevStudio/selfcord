@@ -162,7 +162,12 @@ class Messageable(Channel):
             self.bot.cached_messages[msg.id] = msg
             n += 1
 
+        if len(json) == 0:
+            return msgs
+
         while n < limit:
+            if len(json) == 0:
+                return msgs
             last = msgs[-1]
             json = await self.http.request(
                 "GET", f"/channels/{self.id}/messages?before={last.id}&limit=50",

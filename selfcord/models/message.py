@@ -20,10 +20,20 @@ class Message:
         else:
             link = f"https://discord.com/channels/@me/{self.channel_id}/{self.id}"
         return link
+    
+    @property
+    def guild(self):
+        return self.bot.fetch_guild(self.guild_id)
+    
+    @property
+    def channel(self):
+        return self.bot.fetch_channel(self.channel_id)
 
     def update(self, payload: dict):
         self.id: Optional[str] = payload.get("id")
         self.content: Optional[str] = payload.get("content")
+        if self.content is not None:
+            self.content = self.content.replace("\x00", "")
         self.type: int = payload.get("type", 0)
         self.tts: bool = payload.get("tts", False)
         self.timestamp: Optional[int] = payload.get("timestamp")
@@ -31,10 +41,8 @@ class Message:
         self.pinned: Optional[bool] = payload.get("pinned")
         self.nonce: Optional[int] = payload.get("nonce")
         self.mentions: Optional[dict] = payload.get("mentions")
-        self.channel_id: str = payload.get("channel_id", "")
-        self.channel: Optional[Messageable] = self.bot.fetch_channel(self.channel_id)
-        self.guild_id: str = payload.get("guild_id")
-        self.guild: Optional[Guild] = self.bot.fetch_guild(self.guild_id)
+        self.channel_id: Optional[str] = payload.get("channel_id", "")
+        self.guild_id: Optional[str] = payload.get("guild_id")
         # if payload.get("author") is None:
         #     print(payload)
         self.author: Optional[User] = (

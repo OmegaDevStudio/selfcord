@@ -111,9 +111,10 @@ class Guild:
             )
             self.preferred_locale: Optional[str] = properties.get(
                 "preferred_locale")
+            
             self.icon: Optional[Asset] = (
                 Asset(self.id, properties["icon"]).from_icon()
-                if properties.get("discovery_splash") is not None
+                if properties.get("icon") is not None
                 else None
             )
             self.latest_onboarding_question_id: Optional[str] = properties.get(
@@ -165,6 +166,7 @@ class Guild:
                                 else None
                             ))
                         elif key == "icon":
+                      
                             setattr(self, key, (
                                 Asset(self.id, payload["banner"]).from_avatar()
                                 if payload.get("banner") is not None and self.id is not None

@@ -5,6 +5,7 @@ import time
 import asyncio
 from .events import Handler
 import websockets
+from aioconsole import aprint
 import ujson
 
 if TYPE_CHECKING:
@@ -40,20 +41,22 @@ class Gateway:
         self.last_ack: float = 0
         self.last_send: float = 0
         self.latency: float = float("inf")
-        self.ws: Optional[Connect] = None
+        self.ws: Connect
         self.alive = False
         self.URL = (
             "wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream"
             if self.decompress else 
             "wss://gateway.discord.gg/?encoding=json&v=9"
         )
-        self.resume_url: Optional[str]
-        self.session_id: Optional[str]
 
 
     async def send_json(self, payload: dict):
         if self.ws:
-            await self.ws.send(ujson.dumps(payload))
+            try:
+                await self.ws.send(ujson.dumps(payload))
+            except Exception:
+                await self.close()
+                await self.connect(self.bot.resume_url)
 
     async def load_async(self, item):
         loop = asyncio.get_event_loop()
@@ -70,14 +73,10 @@ class Gateway:
                 if len(item) < 4 or item[-4:] != self.zlib_suffix:
                     return
                 n = len(item)
-                try:
-                    item = self.zlib.decompress(item)
-                    self.zlib.flush(n)
-                    # self.zlib = decompressobj(15)
-                except Exception as e:
-                    # with open("test.txt", "a+") as f:
-                    #     f.write(f"{item}\n")
-                    print(e)
+                
+                item = self.zlib.decompress(item)
+                self.zlib.flush(n)
+                
             item = await self.load_async(item)
 
             # await asyncio.sleep(1)
@@ -86,6 +85,7 @@ class Gateway:
                 op = item["op"]
                 data = item["d"]
                 event = item["t"]
+                seq = item["s"]
 
                 if op == self.HELLO:
                     interval = data["heartbeat_interval"] / 1000.0
@@ -95,22 +95,32 @@ class Gateway:
                 elif op == self.HEARTBEAT_ACK:
                     self.heartbeat_ack()
 
+                elif op == self.RECONNECT:
+                    await self.close()
+                    await asyncio.sleep(3)
+                    await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+
+                    await self.send_json({
+                        "op": 6,
+                        "d": {"token": self.token, "session_id": self.bot.session_id, "seq": seq},
+                    })
+
                 elif op == self.DISPATCH:
                     if hasattr(self.handler, f"handle_{event.lower()}"):
                         method = getattr(
                             self.handler, f"handle_{event.lower()}")
                         asyncio.create_task(method(data))
 
-    async def connect(self):
+    async def connect(self, url: str):
         self.ws = await websockets.connect(
-            self.URL, origin="https://discord.com", max_size=None,
+            url, origin="https://discord.com", max_size=None,
             extra_headers={"user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0"},
             read_limit=1000000, max_queue=100, write_limit=1000000,
         )
         self.alive = True
 
     async def start(self, token: str):
-        await self.connect()
+        await self.connect(self.URL)
         
         self.token = token
         while self.alive:
@@ -118,12 +128,34 @@ class Gateway:
                 await self.recv_json()
             except Exception:
                 await self.close()
+                await self.connect(self.bot.resume_url)
+        
+    async def cache_guild(self, guild: Guild, channel):
+        payload = {
+            "op": 14,
+            "d": {
+                "guild_id": guild.id,
+                "typing": True,
+                "threads": False,
+                "activities": True,
+                "members": [],
+                "channels": {
+                    str(channel.id): [
+                        [
+                            0,
+                            99
+                        ]
+                    ]
+                }
+            }
+        }
+        await self.send_json(payload)
+
     async def close(self):
         """This function closes the websocket
         """
         self.alive = False
-        if self.ws:
-            await self.ws.close()
+        await self.ws.close()
 
     async def identify(self):
         payload = {
@@ -211,7 +243,7 @@ class Gateway:
                 break
             yield lst[: i + 1]
 
-    async def chunk_members(self, guild: Guild):
+    def correct_channels(self, guild: Guild):
         roles = guild.me.roles
         
         channels = []
@@ -223,7 +255,7 @@ class Gateway:
                             for name, value in permission.items():
                                 if name == "VIEW_CHANNEL":
                                     if value:
-                                        print(channel.name, "has view channel permission, original")
+                                        
                                         channels.append(channel)
                                         break
   
@@ -233,13 +265,15 @@ class Gateway:
                             if name == "VIEW_CHANNEL":
                                 break
                         else:
-                            print(channel.name, "has view channel permission")
+                            
                             channels.append(channel)
                             break
-        print(len(channels))
 
+        return list(set(channels))
 
-        
+    async def chunk_members(self, guild: Guild):
+        channels = self.correct_channels(guild)
+        channels = channels[:5]
         ranges = []
 
         if guild.member_count is not None:
@@ -256,6 +290,7 @@ class Gateway:
                 "d": {
                     "guild_id": guild.id,
                     "typing": True,
+                    "threads": True
                 }
             }
             data = payload['d']

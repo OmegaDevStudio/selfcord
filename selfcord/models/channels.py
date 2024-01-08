@@ -23,8 +23,8 @@ class PermissionOverwrite:
     def update(self, payload: dict):
         self.id: str = payload["id"]
         self.type: int = payload["type"]
-        self.allow: int = Permission(payload["allow"], self.bot)
-        self.deny: int = Permission(payload["deny"], self.bot)
+        self.allow: Permission = Permission(payload["allow"], self.bot)
+        self.deny: Permission = Permission(payload["deny"], self.bot)
 
 class Channel:
     def __init__(self, payload: dict, bot: Bot):
@@ -38,6 +38,10 @@ class Channel:
         self.flags = payload.get("flags")
         self.last_message_id = payload.get("last_message_id")
         self.guild_id = payload.get("guild_id")
+    
+    @property
+    def guild(self):
+        return self.bot.fetch_guild(self.guild_id)
 
     async def delete(self):
         await self.http.request(
@@ -49,6 +53,8 @@ class Callable(Channel):
     def __init__(self, payload: dict, bot: Bot):
         self.bot: Bot = bot
         self.http: HttpClient = bot.http
+        super().__init__(payload, self.bot)
+        super().update(payload)
         self.update(payload)
 
     def update(self, payload):
@@ -76,6 +82,8 @@ class Messageable(Channel):
     def __init__(self, payload: dict, bot: Bot):
         self.bot: Bot = bot
         self.http: HttpClient = bot.http
+        super().__init__(payload, self.bot)
+        super().update(payload)
         self.update(payload)
 
     def __repr__(self):
@@ -155,7 +163,9 @@ class Messageable(Channel):
             return msgs
 
         for message in json:
+            message.update({"guild_id": self.guild_id})
             msg = Message(message, self.bot)
+            
             if bot_user_only:
                 if msg.author.id == self.bot.user.id:
                     msgs.append(msg)
@@ -180,6 +190,7 @@ class Messageable(Channel):
             )
 
             for message in json:
+                message.update({"guild_id": self.guild_id})
                 msg = Message(message, self.bot)
                 if bot_user_only:
                     if msg.author.id == self.bot.user.id:
@@ -219,7 +230,10 @@ class Messageable(Channel):
         if json is not None:
             for messages in json['messages']:
                 for message in messages:
-                    self.bot.cached_messages[message.id] = Message(message, self.bot)
+                    message.update({"guild_id": self.guild_id})
+                    msg = Message(message, self.bot)
+                   
+                    self.bot.cached_messages[message.id] = msg
             return [Message(message, self.bot) for messages in json['messages'] for message in messages]
 
     async def search(

@@ -1,6 +1,7 @@
 import itertools
 from time import perf_counter
 from aioconsole import aprint
+import asyncio
 from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd, PresenceUpdate, DMChannel
 import ujson
 
@@ -181,12 +182,21 @@ class Handler:
 
         await self.bot.inbuilt_commands()
         await self.bot.emit("ready_supplemental")
+        await asyncio.sleep(2)
+
+        for guild in self.bot.user.guilds:
+            if guild.member_count >= 1000:
+                for channel in guild.channels:
+                    if channel.type == 0:
+                        await self.bot.gateway.cache_guild(guild, guild.channels[0])
+                        break
 
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
         if message.author.id not in self.bot.cached_users:
             self.bot.cached_users[message.author.id] = message.author
+        
         await self.bot.process_commands(message)
         await self.bot.emit("message", message)
 
@@ -236,7 +246,7 @@ class Handler:
     async def handle_guild_create(self, data: dict):
         guild = Guild(data, self.bot)
         self.bot.user.guilds.append(guild)
-        await self.bot.emit("guild_create")
+        await self.bot.emit("guild_create", guild)
 
     async def handle_guild_delete(self, data: dict):
         guild = self.bot.fetch_guild(data['id'])
@@ -244,7 +254,7 @@ class Handler:
         del guild
 
     async def handle_guild_member_list_update(self, data: dict):
-        print(data)
+        # print(data)
         pass
 
     async def handle_presence_update(self, data: dict):

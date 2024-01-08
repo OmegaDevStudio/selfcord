@@ -323,7 +323,6 @@ class Bot:
 
         return decorator
     
-        
 
     async def load_tokens(self, tokens: list, prefixes: list[str] = ["!"], eval: bool = False):
         rmv = []
@@ -493,27 +492,37 @@ class Bot:
         asyncio.create_task(context.invoke())
     
     def fetch_message(self, message_id: str) -> Optional[Message]:
+        if message_id is None:
+            return
         return self.cached_messages.get(message_id)
 
     def fetch_user(self, user_id: str) -> Optional[User]:
+        if user_id is None:
+            return
         return self.cached_users.get(user_id)
 
     def fetch_channel(self, channel_id: str) -> Optional[Messageable]:
+        if channel_id is None:
+            return
         return self.cached_channels.get(channel_id)
 
     # Cry it's O(N) - max 100 guilds so it's cool
     def fetch_guild(self, guild_id: str) -> Optional[Guild]:
+        if guild_id is None:
+            return
         for guild in self.user.guilds:
             if guild.id == guild_id:
                 return guild
-        return
+
     
     def fetch_role(self, role_id: str) -> Optional[Role]:
+        if role_id is None:
+            return
         for guild in self.user.guilds:
             for role in guild.roles:
                 if role.id == role_id:
                     return role
-        return
+
 
 
     async def get_user(self, user_id: str) -> Optional[User]:

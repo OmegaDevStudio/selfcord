@@ -54,10 +54,11 @@ class Gateway:
         if self.ws:
             try:
                 await self.ws.send(ujson.dumps(payload))
-            except Exception:
-                await aprint("Closing because fail send. Attempting reconnect")
+            except Exception as e:
+                await aprint(f"Closing because fail send. Attempting reconnect\n{e}")
                 await self.close()
-                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+                await asyncio.sleep(2)
+                await self.connect(f"{self.URL}")
 
     async def load_async(self, item):
         loop = asyncio.get_event_loop()
@@ -73,13 +74,15 @@ class Gateway:
                 try:
                     buffer.extend(item)
                 except:
-                    print(item)
+                    await aprint(item, self.bot.user.username)
                 if len(item) < 4 or item[-4:] != self.zlib_suffix:
                     return
                 n = len(item)
                 
+                
                 item = self.zlib.decompress(item)
                 self.zlib.flush(n)
+                
                 
             item = await self.load_async(item)
 
@@ -103,7 +106,7 @@ class Gateway:
                     await aprint("Attempting reconnect????")
                     await self.close()
                     await asyncio.sleep(3)
-                    
+
                     await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
 
                     await self.send_json({
@@ -124,6 +127,7 @@ class Gateway:
             read_limit=1000000, max_queue=100, write_limit=1000000,
         )
         self.alive = True
+        self.zlib = decompressobj(15)
 
     async def start(self, token: str):
         await self.connect(self.URL)
@@ -132,10 +136,11 @@ class Gateway:
         while self.alive:
             try:
                 await self.recv_json()
-            except Exception:
-                await aprint("Closing because fail recv. Attempting reconnect")
+            except Exception as e:
+                await aprint(f"Closing because fail recv. Attempting reconnect\n{e}")
                 await self.close()
-                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+                await asyncio.sleep(2)
+                await self.connect(f"{self.URL}")
         
     async def cache_guild(self, guild: Guild, channel):
         payload = {

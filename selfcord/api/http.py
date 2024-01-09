@@ -5,7 +5,7 @@ import random
 from base64 import b64encode
 from traceback import format_exception
 from typing import TYPE_CHECKING
-
+from urllib import parse
 import aiohttp
 import ujson
 from aioconsole import aprint
@@ -76,6 +76,9 @@ class HttpClient:
 
     def remove_dupes(self, dictionary: dict):
         return set(dictionary)
+    
+    def encode_emoji(self, emoji: str):
+        return parse.quote("😡")
 
     async def request(self, method: str, endpoint: str, *args, **kwargs) -> dict | None:
         """Used to send requests

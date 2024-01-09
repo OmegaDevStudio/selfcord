@@ -89,6 +89,12 @@ class Message:
         if json is not None:
             return Message(json, self.bot)
         
+    async def add_reaction(self, emoji: str):
+        await self.http.request(
+            "PUT", f"/channels/{self.channel_id}/messages/{self.id}/reactions/{self.http.encode_emoji(emoji)}/%40me?location=Message&type=0"
+        )
+
+        
 class MessageAck:
     def __init__(self, payload: dict, bot) -> None:
         self.bot = bot

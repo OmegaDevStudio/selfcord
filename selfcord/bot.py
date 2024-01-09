@@ -286,6 +286,7 @@ class Bot:
             await getattr(self, on_event)(*args, **kwargs)
         
         if event in self._events.keys():
+            
             for Event in self._events[event]:
                 if len(Event.coro.__code__.co_varnames) == 0:
                     asyncio.create_task(Event.coro())
@@ -343,15 +344,28 @@ class Bot:
                     rmv.append(cmd)
                     mass_bot.commands.add(cmd)
 
-            
+            for ext in self.extensions:
+                for name, value in ext._events.items():
+                    for item in value:
+                        if item.mass_token:
+                            
+                            mass_bot._events[name].append(item)
+
+            for name, value in self._events.items():
+                for item in value:
+                    if item.mass_token:
+                        
+                        mass_bot._events[name].append(item)
             
             self.bots.append(mass_bot)
+
         for rm in rmv:
             try:
                 self.commands.remove(rm)
             except:
                 pass
 
+ 
         self.tokens = await asyncio.gather(*(
             bot.runner(token, True)
             for token, bot in zip(tokens, self.bots)

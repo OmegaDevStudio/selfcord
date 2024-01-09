@@ -186,10 +186,14 @@ class Handler:
 
         for guild in self.bot.user.guilds:
             if guild.member_count >= 1000:
+                n = 0
                 for channel in guild.channels:
                     if channel.type == 0:
+                        n += 1
                         await self.bot.gateway.cache_guild(guild, guild.channels[0])
+                    if n >= 3:
                         break
+                    
 
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
@@ -198,6 +202,7 @@ class Handler:
             self.bot.cached_users[message.author.id] = message.author
         
         await self.bot.process_commands(message)
+        
         await self.bot.emit("message", message)
 
     async def handle_message_update(self, data: dict):

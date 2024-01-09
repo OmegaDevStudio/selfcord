@@ -55,8 +55,9 @@ class Gateway:
             try:
                 await self.ws.send(ujson.dumps(payload))
             except Exception:
+                await aprint("Closing because fail send. Attempting reconnect")
                 await self.close()
-                await self.connect(self.bot.resume_url)
+                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
 
     async def load_async(self, item):
         loop = asyncio.get_event_loop()
@@ -69,7 +70,10 @@ class Gateway:
     
             if self.decompress:
                 buffer = bytearray()
-                buffer.extend(item)
+                try:
+                    buffer.extend(item)
+                except:
+                    print(item)
                 if len(item) < 4 or item[-4:] != self.zlib_suffix:
                     return
                 n = len(item)
@@ -96,8 +100,10 @@ class Gateway:
                     self.heartbeat_ack()
 
                 elif op == self.RECONNECT:
+                    await aprint("Attempting reconnect????")
                     await self.close()
                     await asyncio.sleep(3)
+                    
                     await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
 
                     await self.send_json({
@@ -127,8 +133,9 @@ class Gateway:
             try:
                 await self.recv_json()
             except Exception:
+                await aprint("Closing because fail recv. Attempting reconnect")
                 await self.close()
-                await self.connect(self.bot.resume_url)
+                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
         
     async def cache_guild(self, guild: Guild, channel):
         payload = {

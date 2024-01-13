@@ -7,7 +7,7 @@ from .events import Handler
 import websockets
 from aioconsole import aprint
 import ujson
-from websockets.client import connect
+from websockets.client import connect, ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -42,7 +42,7 @@ class Gateway:
         self.last_ack: float = 0
         self.last_send: float = 0
         self.latency: float = float("inf")
-        self.ws
+        self.ws: ClientConnection
         self.alive = False
         self.URL = (
             "wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream"

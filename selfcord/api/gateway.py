@@ -42,7 +42,7 @@ class Gateway:
         self.last_ack: float = 0
         self.last_send: float = 0
         self.latency: float = float("inf")
-        self.ws: Connect
+        self.ws
         self.alive = False
         self.URL = (
             "wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream"

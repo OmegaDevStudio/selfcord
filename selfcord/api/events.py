@@ -182,7 +182,7 @@ class Handler:
 
         await self.bot.inbuilt_commands()
         await self.bot.emit("ready_supplemental")
-        await asyncio.sleep(2)
+        await asyncio.sleep(4)
 
         for guild in self.bot.user.guilds:
             if guild.member_count >= 1000:

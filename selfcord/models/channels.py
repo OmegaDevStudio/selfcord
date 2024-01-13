@@ -7,11 +7,13 @@ import asyncio
 import datetime
 import time
 from .permissions import Permission
+import ujson
 
 if TYPE_CHECKING:
     from .users import User
     from ..bot import Bot
     from ..api import HttpClient
+
 
 
 class PermissionOverwrite:
@@ -25,6 +27,83 @@ class PermissionOverwrite:
         self.type: int = payload["type"]
         self.allow: Permission = Permission(payload["allow"], self.bot)
         self.deny: Permission = Permission(payload["deny"], self.bot)
+
+
+
+
+class SlashCommand:
+    def __init__(self, payload: dict, bot: Bot) -> None:
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
+
+    def update(self, payload):
+        
+        self.id = payload.get("id")
+        self.type = payload.get("type")
+        self.application_id = payload.get("application_id")
+        self.guild_id = payload.get("guild_id")
+        self.version = payload.get("version")
+        self.name = payload.get("name")
+        self.description = payload.get("description")
+        self.description_default = payload.get("description_default")
+        self.options = [SubCommandOption(option, self) for option in payload.get("options", [])]
+        self.my_options = []
+        self.integration_types = payload.get("integration_types")
+        self.raw_data = payload
+        self.required = payload.get("required", False)
+        
+    def add_value(self, name: str, value):
+        new = {}
+        
+        if type(value) == list:
+            for option in self.options:
+                if option.name == name:
+                    new['name'] = name
+                    new['type'] = option.type
+                    new['options'] = value
+            return self.my_options.append(new)
+        
+        for option in self.options:
+            if option.name == name:
+                new['name'] = name
+                new['value'] = value
+                new['type'] = option.type
+        return self.my_options.append(new)
+        
+    def get_option(self, name: str):
+        for option in self.options:
+            if option.name == name:
+                return option
+
+class SubCommandOption(SlashCommand):
+    def __init__(self, payload: dict, main: SlashCommand) -> None:
+        self.cmd = main
+        self.update(payload)
+        
+        
+    def update(self, payload):
+        self.opt_options = payload.get("options", [])
+        self.name = payload.get("name")
+        self.description = payload.get("description")
+        self.required = payload.get("required", False)
+        self.type = payload.get("type")
+        self.my_options = []
+        
+    def add_value(self, name: str, value):
+        new = {}
+        for option in self.opt_options:
+            if option.get("name", "") == name:
+                new['name'] = name
+                new['value'] = value
+                new['type'] = option['type']
+        self.my_options.append(new)
+    
+    
+    def reconstruct(self):
+        self.cmd.add_value(self.name, self.my_options)
+        
+
 
 class Channel:
     def __init__(self, payload: dict, bot: Bot):
@@ -112,6 +191,49 @@ class Messageable(Channel):
     async def delayed_delete(self, message, time):
         await asyncio.sleep(time)
         await message.delete()
+
+    async def get_slash_commands(self):
+        if self.guild_id is not None:
+            json = await self.http.request(
+                "GET", f"/guilds/{self.guild_id}/application-command-index"
+            )
+            if json is not None:
+                cmds = []
+                for cmd in json['application_commands']:
+                    if cmd.get("guild_id") is None:
+                        cmd.update({"guild_id": self.guild_id})
+                    cmds.append(SlashCommand(cmd, self.bot))
+        
+                return cmds
+            
+    async def trigger_slash(self, cmd: SlashCommand):
+        if self.guild_id is not None:
+            # print(cmd.my_options)
+            
+            json = {
+                "type": 2,
+                "application_id": cmd.application_id,
+                "guild_id": self.guild_id,
+                "channel_id": self.id,
+                "session_id": self.bot.session_id,
+                "data": {
+                    "version": cmd.version, # version not appending
+                    "id": cmd.id,
+                    "name": cmd.name,
+                    "type": cmd.type,
+                    "options": cmd.my_options,
+                    "application_command": cmd.raw_data
+                }
+            }
+            json = ujson.dumps(json)
+            boundary = f"----WebkitFormBoundaryNiggerNiggerSexy"
+            data = f'--{boundary}\r\nContent-Disposition: form-data; name="payload_json"\r\n\r\n{json}\r\n--{boundary}--'
+            
+            json = await self.http.request(
+                "POST", "/interactions",
+                headers={"content-type": f"multipart/form-data; boundary={boundary}"},
+                data=data
+            )
 
     async def send(
         self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False

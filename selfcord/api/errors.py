@@ -12,9 +12,11 @@ class LoginFailure(DiscordException):
 
 
 class ReconnectWebsocket(DiscordException):
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, resume: bool, op: int) -> None:
         self.message = message
-        pass
+        self.resume = resume
+        self.op = op
+        
 
 
 class RuntimeError(DiscordException):

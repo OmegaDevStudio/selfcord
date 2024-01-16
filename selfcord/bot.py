@@ -23,13 +23,14 @@ from aioconsole import aexec, aprint
 
 from selfcord.models.sessions import Session
 
-from .api import Gateway, HttpClient
+from .api import Gateway, HttpClient, ReconnectWebsocket
 from .models import (
     Client, DMChannel, GroupChannel, Guild,
     Message, TextChannel, User, VoiceChannel,
     Capabilities, Convert, Messageable,
     Role
 )
+
 from .utils import (
     Command, CommandCollection, Context, Event, Extension,
     ExtensionCollection, logging
@@ -116,9 +117,27 @@ class Bot:
                     asyncio.create_task(self.gateway.start(token))
                     await asyncio.sleep(wait)
                     return self.user
-            except Exception as e:
-                await self.gateway.close()
-                raise e
+            except ReconnectWebsocket as e:
+                if e.resume:
+                    if "Ratelimit" in e.message:
+                        await asyncio.sleep(20)
+                    if not multi_token:
+                        await self.gateway.start(token, resume=True)
+
+                    else:
+                        asyncio.create_task(self.gateway.start(token, resume=True))
+                        return self.user
+                else:
+                    if not multi_token:
+                        await self.gateway.start(self.token)
+                        
+                    else:
+                        asyncio.create_task(self.gateway.start(token))
+                        await asyncio.sleep(wait)
+                        return self.user
+                    
+
+                
 
     def run(self, token: str):
         """Used to start connection to gateway as well as gather user information

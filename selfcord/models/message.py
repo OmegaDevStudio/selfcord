@@ -213,21 +213,3 @@ class Embed:
         self.author: Optional[str] = payload.get("author")
 
 
-class MessageReactionAdd:
-    def __init__(self, payload: dict, bot) -> None:
-        self.bot = bot
-        self.http = bot.http
-        self.update(payload)
-
-    def update(self, payload: dict):
-        self.burst: bool = payload.get("burst", False)
-        self.channel_id: Optional[str] = payload.get("channel_id")
-        self.emoji: Optional[str] = payload.get("emoji")
-        self.guild_id: Optional[str] = payload.get("guild_id")
-        self.type: int = payload.get("type", 0)
-        self.user_id: Optional[str] = payload.get("user_id")
-        self.message_id: str = payload.get("message_id", "")
-        self.message: Message = self.bot.fetch_message(self.message_id)
-        self.author_id: Optional[str] = payload.get("message_author_id")
-        self.author = self.bot.fetch_user(self.author_id)
-        self.user = self.bot.fetch_user(self.user_id) 

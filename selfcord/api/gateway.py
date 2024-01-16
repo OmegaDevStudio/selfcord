@@ -8,6 +8,7 @@ import websockets
 from aioconsole import aprint
 import ujson
 from websockets.client import connect, ClientConnection
+from .errors import ReconnectWebsocket
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -42,7 +43,7 @@ class Gateway:
         self.last_ack: float = 0
         self.last_send: float = 0
         self.latency: float = float("inf")
-        self.ws: ClientConnection
+        self.ws = None
         self.alive = False
         self.URL = (
             "wss://gateway.discord.gg/?encoding=json&v=9&compress=zlib-stream"
@@ -62,24 +63,26 @@ class Gateway:
 
 
     async def send_json(self, payload: dict):
-        sleep = 2
         if self.ws:
             try:
                 await self.ws.send(ujson.dumps(payload))
             except ConnectionClosed as e:
+                await aprint(f"Closing because fail send. Attempting reconnect {self.bot.user.username}\n{e}")
                 if e.rcvd is not None:
                     if e.rcvd.code == 4008:
-                        sleep += 10
-                    await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                        await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                        await self.close()
+                        raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                        
                 if e.sent is not None:
                     if e.sent.code == 4008:
-                        sleep += 10
-                    await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
-                await aprint(f"Closing because fail send. Attempting reconnect {self.bot.user.username}\n{e}")
-                # await self.linux_run(f"notify-send 'RECONNECT HAPPENING NOW CHECK CONSOLE'")
+                        await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
+                        await self.close()
+                        raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                    
                 await self.close()
-                await asyncio.sleep(sleep)
-                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+                raise ReconnectWebsocket("Unknown", resume=False, op=False)
+        
 
     async def load_async(self, item):
         loop = asyncio.get_event_loop()
@@ -110,33 +113,29 @@ class Gateway:
             # await asyncio.sleep(1)
 
             if item:
-                op = item["op"]
+                self.op = item["op"]
                 data = item["d"]
                 event = item["t"]
-                seq = item["s"]
+                self.seq = item["s"]
 
-                if op == self.HELLO:
+                if self.op == self.HELLO:
                     interval = data["heartbeat_interval"] / 1000.0
                     await self.identify()
                     asyncio.create_task(self.heartbeat(interval))
 
-                elif op == self.HEARTBEAT_ACK:
+                elif self.op == self.HEARTBEAT_ACK:
                     self.heartbeat_ack()
 
-                elif op == self.RECONNECT:
+                elif self.op == self.RECONNECT:
                     await aprint(f"Attempting reconnect???? {self.bot.user.username}")
                     # await self.linux_run(f"notify-send 'RECONNECT HAPPENING NOW CHECK CONSOLE {data} {op}'")
                     await self.close()
-                    await asyncio.sleep(3)
+                    
 
-                    await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+                    raise ReconnectWebsocket("Reconnect Sent", resume=True, op=self.op)
+                    
 
-                    await self.send_json({
-                        "op": self.RESUME,
-                        "d": {"token": self.token, "session_id": self.bot.session_id, "seq": seq},
-                    })
-
-                elif op == self.DISPATCH:
+                elif self.op == self.DISPATCH:
                     if hasattr(self.handler, f"handle_{event.lower()}"):
                         method = getattr(
                             self.handler, f"handle_{event.lower()}")
@@ -151,29 +150,68 @@ class Gateway:
         self.alive = True
         self.zlib = decompressobj(15)
 
-    async def start(self, token: str):
-        sleep = 2
-        await self.connect(self.URL)
-        
-        self.token = token
-        while self.alive:
-            try:
-                await self.recv_json()
-            except ConnectionClosed as e:
-                if e.rcvd is not None:
-                    if e.rcvd.code == 4008:
-                        sleep += 5
-                    
-                    await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
-                if e.sent is not None:
-                    if e.sent.code == 4008:
-                        sleep += 5
-                    await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
-                await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
-                # await self.linux_run(f"notify-send 'RECONNECT HAPPENING NOW CHECK CONSOLE'")
-                await self.close()
-                await asyncio.sleep(sleep)
-                await self.connect(f"{self.bot.resume_url}?encoding=json&v=9&compress=zlib-stream")
+    async def start(self, token: str, resume: bool = False):
+        if not resume:
+            await self.connect(self.URL)
+            
+            self.token = token
+            while self.alive:
+                try:
+
+                    await self.recv_json()
+
+                except ConnectionClosed as e:
+
+                    await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
+                    if e.rcvd is not None:
+                        if e.rcvd.code == 4008:
+                            await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                            await self.close()
+                            raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                            
+                    if e.sent is not None:
+                        if e.sent.code == 4008:
+                            await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
+                            await self.close()
+                            raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                        
+                    await self.close()
+                    raise ReconnectWebsocket("Unknown", resume=False, op=False)
+        else:
+            await self.connect(self.bot.resume_url)
+            await asyncio.sleep(1)
+            await self.resume()
+            while self.alive:
+                try:
+
+                    await self.recv_json()
+
+                except ConnectionClosed as e:
+
+                    await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
+                    if e.rcvd is not None:
+                        if e.rcvd.code == 4008:
+                            await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                            await self.close()
+                            raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                            
+                    if e.sent is not None:
+                        if e.sent.code == 4008:
+                            await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
+                            await self.close()
+                            raise ReconnectWebsocket("Ratelimited", resume=True, op=self.op)
+                        
+                    await self.close()
+                    raise ReconnectWebsocket("Unknown", resume=False, op=False)
+
+
+
+    async def resume(self):
+        await aprint(self.seq, self.bot.session_id)
+        await self.send_json({
+            "op": self.RESUME,
+            "d": {"token": self.token, "session_id": self.bot.session_id, "seq":self.seq},
+        })
         
     async def cache_guild(self, guild: Guild, channel):
         payload = {

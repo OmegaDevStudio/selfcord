@@ -2,7 +2,8 @@ import itertools
 from time import perf_counter
 from aioconsole import aprint
 import asyncio
-from ..models import Guild, Convert, User, Message, Member, MessageAck, MessageReactionAdd, PresenceUpdate, DMChannel
+from ..models import Guild, Convert, User, Message, Member, MessageAck, PresenceUpdate, DMChannel, MessageAddReaction
+
 import ujson
 
 class Handler:
@@ -14,7 +15,7 @@ class Handler:
         # with open("test.json", "a+") as f:
         #     ujson.dump(data, f, indent=4)
 
-        self.bot.resume_url = data['resume_gateway_url']
+        self.bot.resume_url = data['resume_gateway_url'] + "?encoding=json&v=9&compress=zlib-stream"
         self.bot.session_id = data['session_id']
         
         guilds = data.get("guilds", [])
@@ -194,7 +195,7 @@ class Handler:
                     if n >= 3:
                         break
                     
-
+    
     async def handle_message_create(self, data: dict):
         message = Message(data, self.bot)
         self.bot.cached_messages[message.id] = message
@@ -222,7 +223,8 @@ class Handler:
         await self.bot.emit("message_delete", deleted_message)
 
     async def handle_message_reaction_add(self, data: dict):
-        await self.bot.emit("message_reaction_add", MessageReactionAdd(data, self.bot))
+        await self.bot.emit("message_reaction_add", MessageAddReaction(data, self.bot))
+        
 
     async def handle_channel_create(self, data: dict):
 

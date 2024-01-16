@@ -19,6 +19,5 @@ from .channels import (
     Convert,
     Messageable
 )
-from .message import Message, MessageAck, MessageReactionAdd
-from .activity import Activity
-from .event_models import PresenceUpdate
+from .message import Message, MessageAck
+from .event_models import PresenceUpdate, MessageAddReaction

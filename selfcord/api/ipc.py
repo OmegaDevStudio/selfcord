@@ -109,44 +109,44 @@ class DiscordIPC:
     ):
         if payload_override:
             payload = payload_override
+        else:
+            if start:
+                start = int(start)
+            if end:
+                end = int(end)
 
-        if start:
-            start = int(start)
-        if end:
-            end = int(end)
-
-        activity = {
-            "state": state,
-            "details": details,
-            "timestampts": {
-                "start": start,
-                "end": end
-            },
-            "assets": {
-                "large_image": large_image,
-                "large_text": large_text,
-                "small_image": small_image,
-                "small_text": small_text,
-            },
-            "party": {
-                "party_id": party_id,
-                "size": party_size
-            },
-            "secrets": {
-                "join": join,
-                "spectate": spectate,
-                "match": match
-            },
-            "buttons": buttons,
-            "instance": instance
-        }
-        payload = {
-            "cmd": "SET_ACTIVITY",
-            "args": {
-                "pid": self.pid,
-                "activity": activity
-            },
-            "nonce": f"{time.time():.20f}",
-        }
+            activity = {
+                "state": state,
+                "details": details,
+                "timestampts": {
+                    "start": start,
+                    "end": end
+                },
+                "assets": {
+                    "large_image": large_image,
+                    "large_text": large_text,
+                    "small_image": small_image,
+                    "small_text": small_text,
+                },
+                "party": {
+                    "party_id": party_id,
+                    "size": party_size
+                },
+                "secrets": {
+                    "join": join,
+                    "spectate": spectate,
+                    "match": match
+                },
+                "buttons": buttons,
+                "instance": instance
+            }
+            payload = {
+                "cmd": "SET_ACTIVITY",
+                "args": {
+                    "pid": self.pid,
+                    "activity": activity
+                },
+                "nonce": f"{time.time():.20f}",
+            }
         self.send(1, payload)
 

@@ -14,7 +14,7 @@ import time
 import urllib
 from collections import defaultdict
 from traceback import format_exception
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Literal
 from urllib.parse import urlparse
 
 import aiofiles
@@ -512,6 +512,11 @@ class Bot:
 
     async def logout(self):
         await self.gateway.close()
+
+    async def change_presence(self, status: Literal[
+        "online", "dnd", "idle", "invisible", "offline"
+    ], afk: bool, activity: dict):
+        await self.gateway.send_json(activity)
 
     async def process_commands(self, msg):
         """

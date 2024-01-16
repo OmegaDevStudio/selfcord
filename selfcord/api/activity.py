@@ -298,7 +298,10 @@ class Activity:
             }
         }
         activity = self.remove_null(activity)
-        activity["emoji"] = None
+        
+        if "emoji" not in activity:
+            activity["emoji"] = None
+            
       
         payload = {
             "op": 3,
@@ -364,17 +367,15 @@ class Activity:
                     "match": match
                 },
                 "buttons": buttons,
-                "created_at": int(time.time()),
+                
                 "instance": instance
             }
 
-            activity = self.remove_null(activity)
-            
             
             payload = {
                 "op": 3,
                 "d": {
-                    "since": int(time.time()),
+                    "since": 0,
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk

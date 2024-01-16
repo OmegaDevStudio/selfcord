@@ -4,3 +4,4 @@ from .http import HttpClient
 from .voice import *
 from .errors import *
 from .ipc import DiscordIPC
+from .activity import Activity

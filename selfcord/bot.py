@@ -513,9 +513,7 @@ class Bot:
     async def logout(self):
         await self.gateway.close()
 
-    async def change_presence(self, status: Literal[
-        "online", "dnd", "idle", "invisible", "offline"
-    ], afk: bool, activity: dict):
+    async def change_presence(self, activity: dict):
         await self.gateway.send_json(activity)
 
     async def process_commands(self, msg):

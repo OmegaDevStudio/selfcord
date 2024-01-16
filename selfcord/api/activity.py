@@ -1,5 +1,5 @@
 from typing import Optional, Literal
-
+import time
 
 class Activity:
     def __init__(self, status: Literal[
@@ -8,6 +8,17 @@ class Activity:
         self.status = status
         self.afk = afk
 
+    def remove_null(self, dic: dict):
+        new = {}
+        for key, value in dic.items():
+            if value == None:
+                continue
+            if isinstance(value, dict):
+                value = self.remove_null(value)
+            if value == {}:
+                continue
+            new[key] = value
+        return new
     
 
     def Streaming(
@@ -65,9 +76,11 @@ class Activity:
                 "buttons": buttons,
                 "instance": instance
             }
+            activity = self.remove_null(activity)
             payload = {
                 "op": 3,
                 "d": {
+                    "since": 0,
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk
@@ -128,9 +141,11 @@ class Activity:
                 "buttons": buttons,
                 "instance": instance
             }
+            activity = self.remove_null(activity)
             payload = {
                 "op": 3,
                 "d": {
+                    "since": 0,
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk
@@ -191,9 +206,12 @@ class Activity:
                 "buttons": buttons,
                 "instance": instance
             }
+            activity = self.remove_null(activity)
+
             payload = {
                 "op": 3,
                 "d": {
+                    "since": 0,
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk
@@ -251,12 +269,16 @@ class Activity:
                     "spectate": spectate,
                     "match": match
                 },
-                "buttons": buttons,
+                "metadata": buttons,
                 "instance": instance
             }
+            
+            activity = self.remove_null(activity)
+
             payload = {
                 "op": 3,
                 "d": {
+                    "since": 0,
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk
@@ -264,27 +286,35 @@ class Activity:
             }
         return payload
 
-    def Custom(self, status: str, emoji_name: Optional[str], id: Optional[str], animated: Optional[bool] = False):
+    def Custom(self, status: str, emoji_name: Optional[str] = None, id: Optional[str] = None, animated: Optional[bool] = None):
+        activity = {
+            "type": 4,
+            "name": "Custom Status",
+            "state": status,
+            "emoji": {
+                "name": emoji_name,
+                "id": id,
+                "animated": animated
+            }
+        }
+        activity = self.remove_null(activity)
+        activity["emoji"] = None
+      
         payload = {
             "op": 3,
             "d": {
-                "activities": [{
-                    "type": 4,
-                    "name": status,
-                    "emoji": {
-                        "name": emoji_name,
-                        "id": id,
-                        "animated": animated
-                    }
-                }],
+                "since": 0,
+                "activities": [activity],
                 "status": self.status,
                 "afk": self.afk
             }
         }
+        
         return payload
 
     def Playing(
         self, name: str,
+        application_id: Optional[str] = None,
         state: Optional[str] = None,
         details: Optional[str] = None,
         start: Optional[int] = None,
@@ -334,11 +364,17 @@ class Activity:
                     "match": match
                 },
                 "buttons": buttons,
+                "created_at": int(time.time()),
                 "instance": instance
             }
+
+            activity = self.remove_null(activity)
+            
+            
             payload = {
                 "op": 3,
                 "d": {
+                    "since": int(time.time()),
                     "activities": [activity],
                     "status": self.status,
                     "afk": self.afk

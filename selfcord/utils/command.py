@@ -521,6 +521,9 @@ class Context:
         """
         await self.channel.purge(amount)
 
+    async def typing(self):
+        await self.channel.typing()
+
     async def edit(self, content, file_paths: list = [], delete_after: int | None = None) -> Message:
         """Helper function to edit the message you sent
 

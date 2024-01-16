@@ -235,6 +235,12 @@ class Messageable(Channel):
                 data=data
             )
 
+    async def typing(self):
+        await self.http.request(
+            "POST",
+            f"/channels/{self.id}/typing"
+        )
+
     async def send(
         self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
     ) -> Optional[Message]:

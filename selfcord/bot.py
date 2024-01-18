@@ -413,7 +413,7 @@ class Bot:
             )
             self.commands.add(cmd)
 
-    async def load_extension(self, name: str | None = None, url: str | None = None, dir: str | None = None):
+    async def load_extension(self, name: Optional[str] = None, url: Optional[str] = None, dir: Optional[str] = None):
         """
         Load various extensions/plugins/cogs if any.
 

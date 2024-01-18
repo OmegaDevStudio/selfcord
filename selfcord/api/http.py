@@ -4,7 +4,7 @@ import asyncio
 import random
 from base64 import b64encode
 from traceback import format_exception
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib import parse
 import aiohttp
 import ujson
@@ -80,7 +80,7 @@ class HttpClient:
     def encode_emoji(self, emoji: str):
         return parse.quote("😡")
 
-    async def request(self, method: str, endpoint: str, *args, **kwargs) -> dict | None:
+    async def request(self, method: str, endpoint: str, *args, **kwargs) -> Optional[dict]:
         """Used to send requests
 
         Args:

@@ -22,9 +22,9 @@ class Extension:
     """Extension object. Discord.py equivalent of cogs, a helper system to help manage and organise code into multiple files"""
 
     def __init__(self, **kwargs):
-        self.name: str | None = kwargs.get("name")
-        self.description: str | None = kwargs.get("description")
-        self.ext: Extension | None = kwargs.get("ext")
+        self.name: Optional[str] = kwargs.get("name")
+        self.description: Optional[str] = kwargs.get("description")
+        self.ext: Optional[Extension] = kwargs.get("ext")
         self._events = defaultdict(list)
         _events: defaultdict = self.ext._events
         commands: CommandCollection = self.ext.commands
@@ -81,7 +81,7 @@ class ExtensionCollection:
         # Add extension to the collection
         self.extensions[ext.name] = ext
 
-    def get(self, alias: str) -> Extension | None:
+    def get(self, alias: str) -> Optional[Extension]:
         """Get an extension
 
         Args:
@@ -103,12 +103,12 @@ class Command:
     """Command Object pretty much"""
 
     def __init__(self, **kwargs):
-        self.name: str | None = kwargs.get("name")
-        self.aliases: list[str] | None = [self.name] + kwargs.get("aliases", [])
-        self.description: str | None = kwargs.get("description")
+        self.name: Optional[str] = kwargs.get("name")
+        self.aliases: Optional[list[str]] = [self.name] + kwargs.get("aliases", [])
+        self.description: Optional[str] = kwargs.get("description")
         self.mass_token: bool = kwargs.get("mass_token", False)
-        self.func: function | None = kwargs.get("func")
-        self.check: Any = inspect.signature(self.func).return_annotation
+        self.func: Optional[function] = kwargs.get("func")
+        self.check: Optional[Any] = inspect.signature(self.func).return_annotation
         self.signature = inspect.signature(self.func).parameters.items()
 
 
@@ -196,7 +196,7 @@ class CommandCollection:
         """Clear recents"""
         self.recent_commands.clear()
 
-    def get(self, alias) -> Command | None:
+    def get(self, alias) -> Optional[Command]:
         """Get a specific command from the collection
 
         Args:
@@ -338,7 +338,7 @@ class Context:
         return self.message.content
 
     @property
-    def command(self) -> function | None:
+    def command(self) -> Optional[function]:
         if self.prefix is None:
             return None
         for command in self.bot.commands:
@@ -354,7 +354,7 @@ class Context:
         return None
 
     @property
-    def alias(self) -> str | None:
+    def alias(self) -> Optional[str]:
         for command in self.bot.commands:
             for alias in command.aliases:
                 if self.content.lower().startswith(self.prefix + alias.lower()):
@@ -368,13 +368,13 @@ class Context:
         return None
 
     @property
-    def prefix(self) -> str | None:
+    def prefix(self) -> Optional[str]:
         for prefix in self.bot.prefixes:
             if self.content.startswith(prefix):
                 return prefix
 
     @property
-    def command_content(self) -> str | None:
+    def command_content(self) -> Optional[str]:
         """The content minus the prefix and command name, essentially the args
 
         Returns:
@@ -388,7 +388,7 @@ class Context:
         except:
             return None
 
-    def get_converter(self, param) -> type[str] | Any | None:
+    def get_converter(self, param) -> Optional[type[str]] | Any:
         if param.annotation is param.empty:
             return str
         if callable(param.annotation):
@@ -494,7 +494,7 @@ class Context:
             error = "".join(format_exception(e, e, e.__traceback__))
             log.error(f"Could not run command \n{error}")
 
-    async def reply(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:
+    async def reply(self, content, file_paths: list = [], delete_after: Optional[int] = None, tts=False) -> Optional[Message]:
         """Helper function to reply to your own message containing the command
 
         Args:
@@ -503,7 +503,7 @@ class Context:
         """
         return await self.message.reply(content, file_paths, delete_after, tts)
 
-    async def send(self, content, file_paths: list = [], delete_after: int | None = None, tts=False) -> Optional[Message]:
+    async def send(self, content, file_paths: list = [], delete_after: Optional[int] = None, tts=False) -> Optional[Message]:
         """Helper function to send message to the current channel
 
         Args:
@@ -524,7 +524,7 @@ class Context:
     async def typing(self):
         await self.channel.typing()
 
-    async def edit(self, content, file_paths: list = [], delete_after: int | None = None) -> Message:
+    async def edit(self, content, file_paths: list = [], delete_after: Optional[int] = None) -> Message:
         """Helper function to edit the message you sent
 
         Args:

@@ -580,7 +580,7 @@ class Bot:
         return
     
     async def join_invite(self, invite_code: str) -> Optional[Guild|GroupChannel]:
-        json = await self.http.request(method="post", endpoint=f"/invites/{invite_code}")
+        json = await self.http.request(method="post", endpoint=f"/invites/{invite_code}", json={})
 
         if json is not None:
             if "guild" in json:

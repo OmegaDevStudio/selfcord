@@ -67,25 +67,7 @@ class Gateway:
             try:
                 await self.ws.send(ujson.dumps(payload))
             except ConnectionClosed as e:
-                await aprint(f"Closing because fail send. Attempting reconnect {self.bot.user.username}\n{e}")
-                if e.rcvd is not None:
-                    if e.rcvd.code == 4008:
-                        await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
-                        await self.close()
-                        await asyncio.sleep(2)
-                        await self.connect(self.bot.resume_url)
-                        await self.resume()
-
-                if e.sent is not None:
-                    if e.sent.code == 4008:
-                        await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
-                        await self.close()
-                        await asyncio.sleep(2)
-                        await self.connect(self.bot.resume_url)
-                        await self.resume()
-                    
-                await self.close()
-                raise ReconnectWebsocket("Unknown", resume=False, op=False)
+                await self.handle_reconnect(e)
         
 
     async def load_async(self, item):
@@ -154,6 +136,29 @@ class Gateway:
         self.alive = True
         self.zlib = decompressobj(15)
 
+    async def handle_reconnect(self, e: ConnectionClosed):
+        await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
+        if e.rcvd is not None:
+            if e.rcvd.code in [4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
+                await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                await self.close()
+                await asyncio.sleep(2)
+                await self.connect(self.bot.resume_url)
+                await self.resume()
+                
+        if e.sent is not None:
+            if e.sent.code in [4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
+                await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
+                await self.close()
+                await asyncio.sleep(2)
+                await self.connect(self.bot.resume_url)
+                await self.resume()
+
+        
+        await aprint("Raising error")
+        await self.close()
+        raise ReconnectWebsocket("Unknown", resume=False, op=False)
+
     async def start(self, token: str, resume: bool = False):
         if not resume:
             await self.connect(self.URL)
@@ -165,26 +170,7 @@ class Gateway:
                     await self.recv_json()
 
                 except ConnectionClosed as e:
-
-                    await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
-                    if e.rcvd is not None:
-                        if e.rcvd.code == 4008:
-                            await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
-                            await self.close()
-                            await asyncio.sleep(2)
-                            await self.connect(self.bot.resume_url)
-                            await self.resume()
-                            
-                    if e.sent is not None:
-                        if e.sent.code == 4008:
-                            await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
-                            await self.close()
-                            await asyncio.sleep(2)
-                            await self.connect(self.bot.resume_url)
-                            await self.resume()
-                        
-                    await self.close()
-                    raise ReconnectWebsocket("Unknown", resume=False, op=False)
+                    await self.handle_reconnect(e)
 
 
 

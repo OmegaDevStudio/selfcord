@@ -97,7 +97,7 @@ class Bot:
         self.cached_messages: dict[str, Message] = {}
         self.gateway: Gateway = Gateway(self, decompress)
         self.startup = perf_counter()
-    
+        self.semaphore = asyncio.BoundedSemaphore(1)
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -110,19 +110,13 @@ class Bot:
         if data is not None:
             
             self.user = Client(data, self)
-            
-            if not multi_token:
-                while True:
-                    try:
-                        await self.gateway.start(token)
-                    except ReconnectWebsocket as e:
-                        await self.gateway.close()
-            else:
-                while True:
-                    try:
-                        await self.gateway.start(token)
-                    except ReconnectWebsocket as e:
-                        await self.gateway.close()
+       
+            while True:
+                try:
+                    await self.gateway.start(token)
+                except ReconnectWebsocket as e:
+                    await self.gateway.close()
+  
 
 
                 
@@ -372,11 +366,9 @@ class Bot:
             except:
                 pass
 
- 
-        await asyncio.gather(*(
-            bot.runner(token, True)
-            for token, bot in zip(tokens, self.bots)
-        ))
+        print("here running")
+        for token, bot in zip(tokens, self.bots):
+            asyncio.create_task(bot.runner(token, True))
 
     def add_cmd(self, coro, description="", aliases=[]):
         """

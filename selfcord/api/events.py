@@ -261,7 +261,8 @@ class Handler:
         del guild
 
     async def handle_guild_member_list_update(self, data: dict):
-        # print(data)
+        # for op in data['ops']:
+        #     print(len(data['ops']), op, len(data['ops']))
         pass
 
     async def handle_presence_update(self, data: dict):

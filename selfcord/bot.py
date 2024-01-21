@@ -104,38 +104,26 @@ class Bot:
 
 
         
-    async def runner(self, token: str, multi_token: bool = False, wait: int = 0):
+    async def runner(self, token: str, multi_token: bool = False):
         data = await self.http.static_login(token)
         self.token = token
         if data is not None:
+            
             self.user = Client(data, self)
             
-            try:
-                if not multi_token:
-                    await self.gateway.start(token)
-                else:
-                    asyncio.create_task(self.gateway.start(token))
-                    await asyncio.sleep(wait)
-                    return self.user
-            except ReconnectWebsocket as e:
-                if e.resume:
-                    if "Ratelimit" in e.message:
-                        await asyncio.sleep(20)
-                    if not multi_token:
-                        await self.gateway.start(token, resume=True)
+            if not multi_token:
+                while True:
+                    try:
+                        await self.gateway.start(token)
+                    except ReconnectWebsocket as e:
+                        await self.gateway.close()
+            else:
+                while True:
+                    try:
+                        await self.gateway.start(token)
+                    except ReconnectWebsocket as e:
+                        await self.gateway.close()
 
-                    else:
-                        asyncio.create_task(self.gateway.start(token, resume=True))
-                        return self.user
-                else:
-                    if not multi_token:
-                        await self.gateway.start(self.token)
-                        
-                    else:
-                        asyncio.create_task(self.gateway.start(token))
-                        await asyncio.sleep(wait)
-                        return self.user
-                    
 
                 
 
@@ -385,7 +373,7 @@ class Bot:
                 pass
 
  
-        self.tokens = await asyncio.gather(*(
+        await asyncio.gather(*(
             bot.runner(token, True)
             for token, bot in zip(tokens, self.bots)
         ))

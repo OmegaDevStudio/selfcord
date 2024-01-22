@@ -403,8 +403,7 @@ class Messageable(Channel):
     async def purge(self, amount: int):
         msgs = await self.history(amount, bot_user_only=True)
         for i in range(0, len(msgs), 2):
-            await asyncio.gather(*(msg.delete()
-                                   for msg in msgs[i:i+2]))
+            await asyncio.gather(*(msg.delete() for msg in msgs[i:i+2]))
 
 
 

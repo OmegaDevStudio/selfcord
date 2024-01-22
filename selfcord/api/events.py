@@ -176,9 +176,7 @@ class Handler:
                         
                         guild.members.append(check_user)
             
-        for channel in self.bot.user.private_channels:
-            if isinstance(channel, DMChannel):
-                channel.get_user()
+        
 
 
         await self.bot.inbuilt_commands()
@@ -227,11 +225,10 @@ class Handler:
         
 
     async def handle_channel_create(self, data: dict):
-
         channel = Convert(data, self.bot)
         self.bot.cached_channels[channel.id] = channel
 
-        if hasattr(channel, "guild_id"):
+        if data.get("guild_id") is not None:
             guild = self.bot.fetch_guild(channel.guild_id)
             guild.channels.append(channel)
         else:
@@ -261,9 +258,13 @@ class Handler:
         del guild
 
     async def handle_guild_member_list_update(self, data: dict):
-        MemberListUpdate(data, self.bot)
-     
-        pass
+        await self.bot.emit("guild_member_list_update", MemberListUpdate(data, self.bot))
+
+    async def handle_call_update(self, data: dict):
+        await aprint(data)
+
+    async def handle_call_create(self, data: dict):
+        await aprint(data)
 
     async def handle_presence_update(self, data: dict):
         pres = PresenceUpdate(data, self.bot)

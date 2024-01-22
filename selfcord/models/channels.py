@@ -410,11 +410,21 @@ class DMChannel(Messageable, Callable):
         self.http = bot.http
         self.update(payload)
 
+    @property
+    def recipient(self):
+        return self.bot.fetch_user(self.recipient_id)
+
+
     def update(self, payload: dict):
-        self.recipient: Optional[User] = self.bot.fetch_user(
-            payload["recipient_ids"][0] if payload.get("recipient_ids") is not None else ""
-        )
-        self.recipient_id = payload['recipient_ids'][0]
+
+        for recipien in payload.get("recipients", payload.get("recipient_ids", [])):
+            if isinstance(recipien, str):
+                self.recipient_id = int(recipien)
+            else:
+                self.recipient_id = recipien['id']
+
+
+        
         self.is_spam: Optional[bool] = payload.get("is_spam")
 
     def get_user(self):

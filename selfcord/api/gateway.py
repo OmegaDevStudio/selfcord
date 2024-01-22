@@ -112,6 +112,17 @@ class Gateway:
                 elif self.op == self.HEARTBEAT_ACK:
                     self.heartbeat_ack()
 
+                elif self.op == self.INVALIDATE_SESSION:
+                    if data == False:
+                        await self.close()
+                        raise ReconnectWebsocket("Invalidated Session", resume=False, op=self.op)
+                    else:
+                        await self.close()
+                        await asyncio.sleep(2)
+                        await self.connect(self.bot.resume_url)
+                        await self.resume()
+                    
+
                 elif self.op == self.RECONNECT:
                     await aprint(f"Attempting reconnect???? {self.bot.user.username}")
                     # await self.linux_run(f"notify-send 'RECONNECT HAPPENING NOW CHECK CONSOLE {data} {op}'")
@@ -137,9 +148,9 @@ class Gateway:
         self.zlib = decompressobj(15)
 
     async def handle_reconnect(self, e: ConnectionClosed):
-        await aprint(f"Closing because fail recv. Attempting reconnect {self.bot.user.username}\n{e}")
+        await aprint(f"Closing because fail. Attempting reconnect {self.bot.user.username}\n{e}")
         if e.rcvd is not None:
-            if e.rcvd.code in [4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
+            if e.rcvd.code in [1000, 1001, 1011, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
                 await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
                 await self.close()
                 await asyncio.sleep(2)
@@ -147,7 +158,7 @@ class Gateway:
                 await self.resume()
                 
         if e.sent is not None:
-            if e.sent.code in [4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
+            if e.sent.code in [1000, 1001, 1011, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
                 await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
                 await self.close()
                 await asyncio.sleep(2)
@@ -171,6 +182,8 @@ class Gateway:
 
                 except ConnectionClosed as e:
                     await self.handle_reconnect(e)
+
+                
 
 
 

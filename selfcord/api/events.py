@@ -226,9 +226,6 @@ class Handler:
         await self.bot.emit("message_ack", ack)
 
     async def handle_message_delete(self, data: dict):
-        # Was thinking of maybe removing it from cache
-        # But I think would be more useful to keep it
-        # This can return None if there is no valid message in cache
         deleted_message = self.bot.fetch_message(data['id'])
         await self.bot.emit("message_delete", deleted_message)
 
@@ -254,9 +251,14 @@ class Handler:
         del deleted_channel
 
     async def handle_thread_create(self, data: dict):
+        print(data)
         pass
 
+    async def handle_thread_update(self, data: dict):
+        print(data)
+
     async def handle_thread_delete(self, data: dict):
+        print(data)
         pass
 
     async def handle_guild_create(self, data: dict):

@@ -251,14 +251,15 @@ class Handler:
         del deleted_channel
 
     async def handle_thread_create(self, data: dict):
-        print(data)
+        # print(data)
         pass
 
     async def handle_thread_update(self, data: dict):
-        print(data)
+        # print(data)
+        pass
 
     async def handle_thread_delete(self, data: dict):
-        print(data)
+        # print(data)
         pass
 
     async def handle_guild_create(self, data: dict):

@@ -425,7 +425,7 @@ class DMChannel(Messageable, Callable):
 
         for recipien in payload.get("recipients", payload.get("recipient_ids", [])):
             if isinstance(recipien, str):
-                self.recipient_id = int(recipien)
+                self.recipient_id = recipien
             else:
                 self.recipient_id = recipien['id']
 

@@ -192,7 +192,7 @@ class Messageable(Channel):
         await asyncio.sleep(time)
         await message.delete()
 
-    async def get_slash_commands(self):
+    async def get_slash_commands(self, name: Optional[str] = None) -> Optional[SlashCommand] | Optional[list[SlashCommand]]:
         if self.guild_id is not None:
             json = await self.http.request(
                 "GET", f"/guilds/{self.guild_id}/application-command-index"
@@ -203,7 +203,10 @@ class Messageable(Channel):
                     if cmd.get("guild_id") is None:
                         cmd.update({"guild_id": self.guild_id})
                     cmds.append(SlashCommand(cmd, self.bot))
-        
+                if name is not None:
+                    for cmd in cmds:
+                        if cmd.name == name:
+                            return cmd
                 return cmds
             
     async def trigger_slash(self, cmd: SlashCommand):

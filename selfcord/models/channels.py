@@ -205,7 +205,7 @@ class Messageable(Channel):
                     cmds.append(SlashCommand(cmd, self.bot))
                 if name is not None:
                     for cmd in cmds:
-                        if cmd.name == name:
+                        if cmd.name.lower() == name.lower():
                             return cmd
                 return cmds
             

@@ -12,6 +12,7 @@ import random
 import sys
 import time
 import urllib
+
 from collections import defaultdict
 from traceback import format_exception
 from typing import TYPE_CHECKING, Optional, Literal
@@ -366,7 +367,6 @@ class Bot:
             except:
                 pass
 
-        print("here running")
         for token, bot in zip(tokens, self.bots):
             asyncio.create_task(bot.runner(token, True))
 
@@ -517,7 +517,7 @@ class Bot:
             return
         return self.cached_users.get(user_id)
 
-    def fetch_channel(self, channel_id: str) -> Optional[Messageable]:
+    def get_channel(self, channel_id: str) -> Optional[Messageable]:
         if channel_id is None:
             return
         return self.cached_channels.get(channel_id)

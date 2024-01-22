@@ -27,7 +27,7 @@ class Message:
     
     @property
     def channel(self):
-        return self.bot.fetch_channel(self.channel_id)
+        return self.bot.get_channel(self.channel_id)
 
     def update(self, payload: dict):
         self.id: Optional[str] = payload.get("id")
@@ -103,7 +103,7 @@ class MessageAck:
 
     def update(self, payload: dict):
         self.channel_id: str = payload['channel_id']
-        self.channel = self.bot.fetch_channel(self.channel_id)
+        self.channel = self.bot.get_channel(self.channel_id)
         self.flags: Optional[int] = payload.get("flags")
         self.last_viewed = payload['last_viewed']
         self.message_id = payload['message_id']

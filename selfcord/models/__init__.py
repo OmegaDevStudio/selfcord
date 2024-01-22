@@ -20,4 +20,4 @@ from .channels import (
     Messageable
 )
 from .message import Message, MessageAck
-from .event_models import PresenceUpdate, MessageAddReaction
+from .event_models import PresenceUpdate, MessageAddReaction, MemberListUpdate

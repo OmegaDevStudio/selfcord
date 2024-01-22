@@ -2,7 +2,7 @@ import itertools
 from time import perf_counter
 from aioconsole import aprint
 import asyncio
-from ..models import Guild, Convert, User, Message, Member, MessageAck, PresenceUpdate, DMChannel, MessageAddReaction
+from ..models import Guild, Convert, User, Message, Member, MessageAck, PresenceUpdate, DMChannel, MessageAddReaction, MemberListUpdate
 
 import ujson
 
@@ -240,7 +240,7 @@ class Handler:
         await self.bot.emit("channel_create", channel)
 
     async def handle_channel_delete(self, data: dict):
-        deleted_channel = self.bot.fetch_channel(data['id'])
+        deleted_channel = self.bot.get_channel(data['id'])
         await self.bot.emit("channel_delete", deleted_channel)
         del deleted_channel
 
@@ -261,8 +261,8 @@ class Handler:
         del guild
 
     async def handle_guild_member_list_update(self, data: dict):
-        # for op in data['ops']:
-        #     print(len(data['ops']), op, len(data['ops']))
+        MemberListUpdate(data, self.bot)
+     
         pass
 
     async def handle_presence_update(self, data: dict):

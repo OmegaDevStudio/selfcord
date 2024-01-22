@@ -96,3 +96,26 @@ class Group:
         self.group_id = payload.get("id")
         self.count = payload.get("count")
 
+class CallCreate:
+    def __init__(self, payload: dict, bot) -> None:
+        self.bot = bot
+        self.http = bot.http
+        self.update(payload)
+
+    @property
+    def channel(self):
+        return self.bot.get_channel(self.channel_id)
+    
+    def update(self, payload):
+        self.voice_states = []
+        for user in payload.get("voice_states", []):
+            check_user = self.bot.fetch_user(user)
+            if check_user is None:
+                self.voice_states.append(User(user, self.bot))
+            else:
+                check_user.partial_update(user)
+                self.voice_states.append(check_user)
+        self.ringing = payload.get("ringing", [])
+        self.region = payload.get("region")
+        self.channel_id = payload.get("channel_id")
+

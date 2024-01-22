@@ -2,7 +2,19 @@ import itertools
 from time import perf_counter
 from aioconsole import aprint
 import asyncio
-from ..models import Guild, Convert, User, Message, Member, MessageAck, PresenceUpdate, DMChannel, MessageAddReaction, MemberListUpdate
+from ..models import (
+    Guild,
+    Convert,
+    User,
+    Message,
+    Member,
+    MessageAck,
+    PresenceUpdate,
+    DMChannel,
+    MessageAddReaction,
+    MemberListUpdate,
+    CallCreate
+)
 
 import ujson
 
@@ -264,7 +276,7 @@ class Handler:
         await aprint(data)
 
     async def handle_call_create(self, data: dict):
-        await aprint(data)
+        await self.bot.emit("call_create", CallCreate(data, self.bot))
 
     async def handle_presence_update(self, data: dict):
         pres = PresenceUpdate(data, self.bot)

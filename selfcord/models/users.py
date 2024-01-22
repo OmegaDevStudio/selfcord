@@ -109,6 +109,16 @@ class User:
         self.is_bot = payload.get("bot", False)
         self.premium_since = payload.get("premium_since")
 
+        self.session_id = payload.get("session_id")
+        self.self_video = payload.get("self_video")
+        self.suppress = payload.get("suppress")
+        self.self_mute = payload.get("self_mute")
+        self.self_deaf = payload.get("self_deaf")
+        self.request_to_speak_timestamp = payload.get("request_to_speak_timestamp")
+        self.mute = payload.get("mute")
+        self.deaf = payload.get("deaf")
+        
+
     def partial_update(self, payload: dict):
         for key, value in payload.items():
             if hasattr(self, key):

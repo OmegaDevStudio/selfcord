@@ -71,7 +71,7 @@ class SlashCommand:
                 new['type'] = option.type
         return self.my_options.append(new)
         
-    def get_option(self, name: str):
+    def get_option(self, name: str) -> Optional[SubCommandOption]:
         for option in self.options:
             if option.name == name:
                 return option
@@ -169,7 +169,10 @@ class Messageable(Channel):
         return f"<{self.__class__.__name__} id={self.id}>"
 
     def __str__(self):
-        return self.name
+        if hasattr(self, "name"):
+            return self.name
+        else:
+            return self.recipient
 
     def update(self, payload):
         self.id: str = payload["id"]

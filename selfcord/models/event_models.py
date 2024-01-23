@@ -109,7 +109,8 @@ class CallCreate:
     def update(self, payload):
         self.voice_states = []
         for user in payload.get("voice_states", []):
-            check_user = self.bot.fetch_user(user)
+            
+            check_user = self.bot.fetch_user(user['user_id'])
             if check_user is None:
                 self.voice_states.append(User(user, self.bot))
             else:

@@ -17,7 +17,8 @@ from .channels import (
     ForumChannel,
     MediaChannel,
     Convert,
-    Messageable
+    Messageable,
+    Callable
 )
 from .message import Message, MessageAck
 from .event_models import PresenceUpdate, MessageAddReaction, MemberListUpdate, CallCreate

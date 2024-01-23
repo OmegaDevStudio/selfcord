@@ -144,7 +144,14 @@ class Callable(Channel):
             await self.bot.gateway.call(self.id, None)
         else:
             await self.bot.gateway.call(self.id, self.guild_id)
-        await self.ring()
+        if self.guild_id is None:
+            await self.ring()
+
+        await asyncio.sleep(1.5)
+        if self.bot.gateway.voice:
+            self.bot.gateway.voice.channel = self.id
+            asyncio.create_task(self.bot.gateway.voice.start())
+            
 
     async def ring(self):
         await self.http.request(
@@ -154,6 +161,9 @@ class Callable(Channel):
 
     async def leave_call(self):
         await self.bot.gateway.leave_call()
+        if self.bot.gateway.voice:
+            self.bot.gateway.voice.channel = None
+            await self.bot.gateway.voice.close()
 
 
 

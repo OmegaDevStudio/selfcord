@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from ..bot import Bot
     from websockets import connection
     from ..models import Capabilities, Guild, Messageable
+    from .voice import Voice
 
 
 class Gateway:
@@ -50,6 +51,7 @@ class Gateway:
             if self.decompress else 
             "wss://gateway.discord.gg/?encoding=json&v=9"
         )
+        self.voice: Optional[Voice] = None
 
     async def linux_run(self, cmd):
         proc = await asyncio.create_subprocess_shell(

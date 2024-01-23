@@ -18,3 +18,4 @@ songs/
 .mypy_cache/
 test.json
 .env/
+song.mp3

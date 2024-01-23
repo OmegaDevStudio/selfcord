@@ -2,6 +2,7 @@ import itertools
 from time import perf_counter
 from aioconsole import aprint
 import asyncio
+from .voice import Voice
 from ..models import (
     Guild,
     Convert,
@@ -287,6 +288,13 @@ class Handler:
             pres.user.partial_update(data)
         await self.bot.emit("presence_update",pres)
 
+
+    async def handle_voice_state_update(self, data: dict):
+        pass
+
+    async def handle_voice_server_update(self, data: dict):
+        self.bot.gateway.voice = Voice(bot=self.bot, voice_token=data['token'], endpoint=data['endpoint'], server_id=data.get("channel_id", data['guild_id']))
+        await self.bot.emit("voice_server_update", self.bot.gateway.voice)
 
     async def handle_thread_list_sync(self, data: dict):
         pass

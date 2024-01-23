@@ -29,7 +29,7 @@ from .models import (
     Client, DMChannel, GroupChannel, Guild,
     Message, TextChannel, User, VoiceChannel,
     Capabilities, Convert, Messageable,
-    Role
+    Role, Callable
 )
 
 from .utils import (
@@ -38,6 +38,10 @@ from .utils import (
 )
 from .utils.logging import handler
 import sys
+
+
+if TYPE_CHECKING:
+    from .api import Voice
 
 if sys.platform == "linux":
     import uvloop
@@ -516,8 +520,11 @@ class Bot:
         if user_id is None:
             return
         return self.cached_users.get(user_id)
+    
+    def get_voice(self) -> Optional[Voice]:
+        return self.gateway.voice
 
-    def get_channel(self, channel_id: str) -> Optional[Messageable]:
+    def get_channel(self, channel_id: str) -> Optional[Messageable|Callable]:
         if channel_id is None:
             return
         return self.cached_channels.get(channel_id)

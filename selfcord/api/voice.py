@@ -1,6 +1,7 @@
 from websockets.client import connect
 import ujson
 from aioconsole import aprint
+from typing import Optional
 import time
 import asyncio
 import socket
@@ -11,6 +12,7 @@ import struct
 import ctypes
 import opuslib
 import array
+
 
 
 SAMPLING_RATE = 48000
@@ -75,6 +77,7 @@ class Voice:
         self.sequence = 0
         self.timestamp = 0
         self.encoder = opuslib.Encoder(SAMPLING_RATE, CHANNELS, application=2049) 
+        self.socket: Optional[socket.socket] = None
 
 
     async def send(self, payload: dict):
@@ -154,25 +157,31 @@ class Voice:
         ret = self.encoder.encode(pcm_data, FRAME_SIZE)
         return array.array('b', data[:len(ret)]).tobytes()
 
-
-
-
-
-
     
     async def send_audio_data(self, source: bytes):
         self.checked_add("sequence", 1, 65535)
         self.source = Source(source)
-        print(len(self.source), len(self.source) != 0)
+        start = time.perf_counter()
+        loops = 0
         while len(self.source) != 0:
+            
             data = self.source.read()
+            loops += 1
+
             encoded = self.encode(data)
             packet = self.get_voice_packet(encoded)
-            await self.speaking()
-            await aprint("sending", len(self.source))
-            self.socket.sendto(packet, (self.ip, self.port))
-            await asyncio.sleep(max(0, (FRAME_LENGTH / 1000.0)))
+
+            await self.speaking(speak=True)
+            if self.socket:
+                await aprint("sending", len(data), f"LEFT: {len(self.source)}")
+                self.socket.sendto(packet, (self.ip, self.port))
+
+            next_time = start + (FRAME_LENGTH / 1000) * loops
+            delay = max(0, (FRAME_LENGTH / 1000) +  (next_time - time.perf_counter()))
+            await aprint(delay)
+            await asyncio.sleep(delay)
             self.checked_add('timestamp', SAMPLES_PER_FRAME, 4294967295)
+           
     
     def get_voice_packet(self, data):
         header = bytearray(12)
@@ -197,15 +206,22 @@ class Voice:
             setattr(self, attr, val + value)
 
 
-    async def speaking(self):
+    async def speaking(self, speak: bool = False, priority = False):
+        val = 0
+        if speak:
+            val += 1
+        if priority:
+            val += 4
         payload = {
             "op": 5,
             "d": {
-               "speaking": 5,
+               "speaking": int(val),
                "delay": 0,
                "ssrc": self.ssrc 
             }
         }
+    
+        await self.send(payload)
 
     async def identify(self):
         payload = {
@@ -254,7 +270,7 @@ class Voice:
 
 
     async def ip_discovery(self):
-        self.socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         self.socket.setblocking(False)
 

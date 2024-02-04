@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import itertools
 from typing import TYPE_CHECKING, Optional, Literal, AsyncGenerator
 from .assets import Asset
@@ -6,6 +7,7 @@ from .channels import Convert, Messageable
 from .message import Message
 from .users import Member
 from .permissions import Permission
+
 if TYPE_CHECKING:
     from ..bot import Bot
 
@@ -265,8 +267,7 @@ class Guild:
 
 
     async def get_members(self):
-        # Doesn't work yet I'm gonna fix
-        pass
+        asyncio.create_task(self.bot.gateway.chunk_members(self))
 
     async def delete(self):
         await self.http.request(

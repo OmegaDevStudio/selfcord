@@ -382,3 +382,50 @@ class Activity:
                 }
             }
         return payload
+    
+    def Spotify(self,
+        end: int,
+        large_image: str,
+        large_text: str,
+        details: str,
+        state: str,
+        party_id: str,
+        ):
+
+
+            activity = {
+                "type": 2,
+                "name": "Spotify",
+                "assets": {
+                    "large_image": large_image,
+                    "large_text": large_text
+                },
+                "details": details,
+                "state": state,
+                "timestamps": {
+                    "start": int(time.time()),
+                    "end": end
+                },
+                "party": {
+                    "id": party_id,
+                },
+                "sync_id": "spotify",
+                "flags": 48,
+                "metadata": {
+                    "context_uri": "spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",
+                    "album_id": "382659064",
+                    "artist_ids": ["06HL4z0CvFAxyc27GXpf02"],
+                },
+        
+            }
+            payload = {
+                "op": 3,
+                "d": {
+                    "since": time.time(),
+                    "activities": [activity],
+                    "status": self.status,
+                    "afk": self.afk
+                }
+            }
+            return payload
+            

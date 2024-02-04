@@ -20,5 +20,6 @@ from .channels import (
     Messageable,
     Callable
 )
+from .webhooks import Webhook
 from .message import Message, MessageAck
 from .event_models import PresenceUpdate, MessageAddReaction, MemberListUpdate, CallCreate

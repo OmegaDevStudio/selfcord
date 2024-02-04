@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Literal
 from .message import Message
+from .webhooks import Webhook
 from .assets import Asset
 import random
 import asyncio
@@ -250,6 +251,16 @@ class Messageable(Channel):
                 headers={"content-type": f"multipart/form-data; boundary={boundary}"},
                 data=data
             )
+
+    async def create_webhook(self, name: str):
+        json = await self.http.request(
+            "POST",
+            f"/channels/{self.id}/webhooks",
+            json={"name": name}
+        )
+        if json is not None:
+            return Webhook(json, self.bot)
+
 
     async def typing(self):
         await self.http.request(

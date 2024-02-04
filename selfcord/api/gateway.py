@@ -267,17 +267,7 @@ class Gateway:
         }
         await self.send_json(payload)
 
-    async def gather_members(self, guild_id: str, channel_id: str):
-        payload = {
-            "op": 14,
-            "d": {
-                "guild_id": guild_id,
-                "channels": {
-                    channel_id: [[0, 99]]
-                }
-            },
-        }
-        await self.send_json(payload)
+
 
     async def heartbeat(self, interval: int):
         heartbeat_json = {"op": 1, "d": time.time()}
@@ -329,6 +319,18 @@ class Gateway:
                             break
 
         return list(set(channels))
+    
+    async def subscriptions(self, guild: Guild):
+       # In Progres...
+       # Basically discord no longer uses op 14, uses this now
+       payload = {
+           "op": 37, 
+           "d": {
+               "subscriptions": {
+                   "guild_id":{"channels": {"channel_id": []}} 
+               }
+           }
+       }
 
     async def chunk_members(self, guild: Guild):
         channels = self.correct_channels(guild)
@@ -340,16 +342,18 @@ class Gateway:
                 ranges.append(
                     [i, self.roundup(i + (guild.member_count - i)) - 1]
                 ) if i + 99 > guild.member_count else ranges.append([i, i + 99])
+            print(ranges)
             
         for item in self.chunks(ranges, 3):
 
             queries = {}
-            payload = {
+            payload = payload = {
                 "op": 14,
                 "d": {
                     "guild_id": guild.id,
                     "typing": True,
-                    "threads": True
+                    "threads": False,
+                    "activities": True,
                 }
             }
             data = payload['d']
@@ -361,7 +365,7 @@ class Gateway:
             data['channel'] = queries
             
             await self.send_json(payload)
-
+            # print(payload)
             await asyncio.sleep(2.0)
         
 

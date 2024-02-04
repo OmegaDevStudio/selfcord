@@ -255,14 +255,7 @@ class Voice:
             "op": 1,
             "d": {
                 "protocol": "udp",
-                "codecs": [
-                    {
-                        "name": "opus",
-                        "type": "audio",
-                        "priority": 1000,
-                        "payload_type": 120,
-                    }
-                ],
+
                 "data": {"address": self.my_ip, "port": self.my_port, "mode": self.mode},
             },
         }

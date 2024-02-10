@@ -6,7 +6,7 @@ from .permissions import Permission
 if TYPE_CHECKING:
     from ..bot import Bot
     from .guild import Guild, Role
-    from .channels import Convert, Messageable
+    from .channels import Convert, Messageable, DMChannel
 
 
 # Realise this might be fucked because my subclassism didn't work with channels

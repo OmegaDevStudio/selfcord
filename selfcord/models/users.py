@@ -6,7 +6,7 @@ from .permissions import Permission
 if TYPE_CHECKING:
     from ..bot import Bot
     from .guild import Guild, Role
-    from .channels import DMChannel, Messageable
+    from .channels import Convert, Messageable
 
 
 # Realise this might be fucked because my subclassism didn't work with channels
@@ -165,10 +165,11 @@ class User:
 
     async def create_dm(self) -> Optional[DMChannel]:
         json = await self.http.request(
-            "post", "/channels", json={"recipients": [self.id if self.id is not None else ""]}
+            "post", "/users/@me/channels", json={"recipients": [self.id if self.id is not None else ""]}
         )
+        print(json)
 
-        return DMChannel(json, self.bot) or None
+        return Convert(json, self.bot)
 
 
 class Client(User):

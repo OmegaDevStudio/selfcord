@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ..models import *
 
 
-log = logging.getLogger(__name__)
+
 
 
 class Extension:
@@ -75,9 +75,9 @@ class ExtensionCollection:
             ValueError: A name or alias is already registered
         """
         if not isinstance(ext, Extension):
-            log.error("ext is not an Extension or subclass of Extension")
+            raise ValueError("Extension must be subclass of Extension")
         if self._is_already_registered(ext):
-            log.error("Name or Alias is already registered")
+            raise ValueError("A name or alias is already registered")
         # Add extension to the collection
         self.extensions[ext.name] = ext
 

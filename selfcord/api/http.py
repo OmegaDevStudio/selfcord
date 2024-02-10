@@ -15,7 +15,7 @@ from ..models import Client, User
 from ..utils import logging
 
 lib, _, _ = __name__.partition(".")
-log = logging.getLogger(__name__)
+
 
 
 class HttpClient:
@@ -133,32 +133,24 @@ class HttpClient:
                         try:
                             json = await resp.json()
                             await asyncio.sleep(json["retry_after"])
-                            log.error(f"429 Ratelimited: {json}")
                             continue
                         except Exception as e:
                             error = "".join(format_exception(e, e, e.__traceback__))
                             text = await resp.text()
                             
-                            log.error(f"Error upon parsing json : {text}")
-                            log.error(f"Error upon parsing json : \n{error}")
-                            log.info(
-                                f"Attempted to send request to URL: {url} PAYLOAD: {kwargs}"
-                            )
+
                             await aprint(error)
                             return None
 
                     elif resp.status == 401:
                         json = await resp.json()
-                        log.error(f"{json} -- {resp.status}")
+                    
                         await aprint(json)
                         return None
 
                     elif resp.status == 403:
                         json = await resp.json()
-                        log.error(f"403 Unauthorized: {json}")
-                        log.info(
-                            f"Attempted to send request to URL: {url} PAYLOAD: {args} {kwargs}"
-                        )
+        
                         await aprint(json)
                         return None
 
@@ -182,7 +174,7 @@ class HttpClient:
                             return None
                         except Exception as e:
                             error = "".join(format_exception(e, e, e.__traceback__))
-                            log.error(f"Unable to log response: \n{error}")
+            
                             await aprint(error)
                             return None
         try: 

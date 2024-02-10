@@ -183,7 +183,7 @@ class Messageable(Channel):
         if hasattr(self, "name"):
             return self.name
         else:
-            return self.recipient
+            return self.recipient.username
 
     def update(self, payload):
         self.id: str = payload["id"]
@@ -430,11 +430,16 @@ class Messageable(Channel):
 
 class DMChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
+
         super().__init__(payload, bot)
+      
         super().update(payload)
+  
         self.bot = bot
         self.http = bot.http
+
         self.update(payload)
+
 
     @property
     def recipient(self):
@@ -698,7 +703,9 @@ class MediaChannel(Messageable):
 
 class Convert(Messageable):
     def __new__(cls, payload: dict, bot: Bot) -> Messageable:
+        
         tpe = payload["type"]
+     
         if tpe == 0:
             return TextChannel(payload, bot)
         if tpe == 1:

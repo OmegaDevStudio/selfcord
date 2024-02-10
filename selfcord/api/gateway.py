@@ -52,6 +52,7 @@ class Gateway:
             "wss://gateway.discord.gg/?encoding=json&v=9"
         )
         self.voice: Optional[Voice] = None
+        self.subscriptions_data = {}
 
     async def linux_run(self, cmd):
         proc = await asyncio.create_subprocess_shell(
@@ -320,17 +321,31 @@ class Gateway:
 
         return list(set(channels))
     
-    async def subscriptions(self, guild: Guild):
+    def get_ranges(self, amount: int):
+        ranges = []
+        for i in range(0, amount, 100):
+            ranges.append(
+                [i, self.roundup(i + (amount - i)) - 1]
+            ) if i + 99 > amount else ranges.append([i, i + 99])
+        return ranges
+    
+    async def subscriptions(self, guild: Guild, channels: Optional[list[Messageable]] = None):
        # In Progres...
        # Basically discord no longer uses op 14, uses this now
-       payload = {
-           "op": 37, 
-           "d": {
-               "subscriptions": {
-                   "guild_id":{"channels": {"channel_id": []}} 
-               }
-           }
-       }
+        if guild.member_count is not None:
+            ranges = self.get_ranges(guild.member_count)
+        if channels is None:
+            channels = self.correct_channels(guild)
+
+        for channel in channels:
+            self.subscriptions_data[guild.id]["channels"].update({channel.id: [0, 99]})
+        print("subscriptions", self.subscriptions_data)
+        payload = {
+            "op": 37, 
+            "d": {
+                "subscriptions": self.subscriptions_data
+            }
+        }
 
     async def chunk_members(self, guild: Guild):
         channels = self.correct_channels(guild)

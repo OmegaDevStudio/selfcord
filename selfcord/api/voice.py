@@ -6,12 +6,16 @@ import time
 import asyncio
 import socket
 import io
-import nacl.secret
-import nacl.utils
 import struct
 import ctypes
-import opuslib
 import array
+
+try:
+    import opuslib
+    import nacl.secret
+    import nacl.utils
+except ImportError:
+    pass
 
 
 

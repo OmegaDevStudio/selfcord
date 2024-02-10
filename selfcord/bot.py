@@ -51,7 +51,6 @@ if sys.platform.startswith("win"):
     winloop.install()
 
 
-log = logging.getLogger(__name__)
 
 
 class Bot:
@@ -263,7 +262,7 @@ class Bot:
 
         def decorator(coro):
             if not inspect.iscoroutinefunction(coro):
-                log.error("Not a coroutine")
+    
                 raise Exception("Not a coroutine")
             else:
                 self._events[event].append(Event(name=event, coro=coro, ext=None, mass_token=mass_token))
@@ -318,7 +317,7 @@ class Bot:
         def decorator(coro):
             name = coro.__name__
             if not inspect.iscoroutinefunction(coro):
-                log.error("Not a coroutine")
+   
                 raise Exception("Not a coroutine")
                 return
             else:
@@ -389,7 +388,7 @@ class Bot:
             aliases = [aliases]
         name = coro.__name__
         if not inspect.iscoroutinefunction(coro):
-            log.error("Not a coroutine")
+
             raise Exception("Not a coroutine")
         else:
             cmd = Command(
@@ -421,7 +420,7 @@ class Bot:
 
                 if path.endswith(".py"):
                     if os.path.exists(path):
-                        log.error(f"Path already exists. {path}")
+          
                         return
 
                     lines = text.splitlines()
@@ -432,7 +431,7 @@ class Bot:
                     name = f"{os.path.basename(urlparse(url).path)[:-3]}"
 
                 else:
-                    log.error(f"{path} is not a python file")
+ 
                     return
 
             else:
@@ -440,7 +439,7 @@ class Bot:
                 
                 if path.endswith(".py"):
                     if os.path.exists(path):
-                        log.error(f"Path already exists. {path}")
+               
                         return
                     if not os.path.exists(dir):
                         os.makedirs(dir)
@@ -452,7 +451,7 @@ class Bot:
                     name = f"{dir}.{os.path.basename(urlparse(url).path)[:-3]}"
 
                 else:
-                    log.error(f"{path} is not a python file")
+        
                     return
 
                 
@@ -469,8 +468,7 @@ class Bot:
         try:
             spec.loader.exec_module(lib)
         except Exception as e:
-            error = "".join(format_exception(e, e, e.__traceback__))
-            log.error(f"Spec could not be loaded\n{error}")
+
             return
         try:
             ext = getattr(lib, "Ext")
@@ -528,6 +526,14 @@ class Bot:
         if channel_id is None:
             return
         return self.cached_channels.get(channel_id)
+    
+    def get_dm(self, user_id: str) -> Optional[DMChannel]:
+        for channel in self.cached_channels.values():
+            if isinstance(channel, DMChannel):
+               
+                if channel.recipient.id == user_id:
+                    return channel
+
 
     # Cry it's O(N) - max 100 guilds so it's cool
     def fetch_guild(self, guild_id: str) -> Optional[Guild]:

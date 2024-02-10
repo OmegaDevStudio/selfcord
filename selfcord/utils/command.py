@@ -93,7 +93,7 @@ class ExtensionCollection:
         try:
             return self.extensions[alias]
         except KeyError as e:
-            log.error(f"{e}")
+            raise KeyError(f"Extension {alias} is not registered") from e
         for extension in self.extensions:
             if extension.name in extension.aliases:
                 return extension
@@ -152,7 +152,7 @@ class CommandCollection:
             ValueError: Collection must be subclass of CommandCollection
         """
         if not isinstance(collection, CommandCollection):
-            log.error("collection is not a subclass of CommandCollection")
+            raise ValueError("Collection must be subclass of CommandCollection")
         for item in collection:
             self.commands[item.name] = item
             self.recent_commands[item.name] = item
@@ -168,15 +168,16 @@ class CommandCollection:
             ValueError: Name or Alias is already registered
         """
         if not isinstance(cmd, Command):
-            log.error("cmd must be a subclass of Command")
+            raise ValueError("cmd must be a subclass of Command")
         if self._is_already_registered(cmd):
-            log.error("Command Name or Alias is already registered")
+            raise ValueError("Name or Alias is already registered")
         self.commands[cmd.name] = cmd
         self.recent_commands[cmd.name] = cmd
 
     def remove(self, cmd: Command):
         if not isinstance(cmd, Command):
-            log.error("cmd must be a subclass of Command")
+            raise ValueError(f"{cmd} is not a subclass of Command")
+        self.recent_commands.pop(cmd.name)
         self.commands.pop(cmd.name)
 
     def recents(self):
@@ -208,7 +209,7 @@ class CommandCollection:
         try:
             return self.commands[alias]
         except KeyError as e:
-            log.error(f"{e}")
+            raise KeyError(f"Command {alias} is not registered") from e
         for command in self.commands:
             if alias in command.aliases:
                 return command
@@ -252,8 +253,8 @@ class Extender:
         def decorator(coro):
             name = coro.__name__
             if not inspect.iscoroutinefunction(coro):
-                log.error("Not a coroutine")
-                raise Exception("Not a coroutine")
+                
+                raise RuntimeError("Not a coroutine")
             else:
                 cmd = Command(
                     name=name, description=description, aliases=aliases, func=coro
@@ -274,8 +275,7 @@ class Extender:
 
         def decorator(coro):
             if not inspect.iscoroutinefunction(coro):
-                log.error("Not a coroutine")
-                raise Exception("Not a coroutine")
+                raise RuntimeError("Not a coroutine")
             else:
                 eve = Event(name=event, coro=coro, ext=cls, mass_token=mass_token)
                 cls._events[event].append(eve)
@@ -305,7 +305,7 @@ class Extender:
             aliases = [aliases]
         name = coro.__name__
         if not inspect.iscoroutinefunction(coro):
-            log.error("Not a coroutine")
+            raise RuntimeError("Not a coroutine")
         else:
             cmd = Command(
                 name=name, description=description, aliases=aliases, func=coro, ext=cls, mass_token=mass_token
@@ -394,7 +394,8 @@ class Context:
         if callable(param.annotation):
             return param.annotation
         else:
-            log.error("Parameter annotation must be callable")
+            raise ValueError("Not a callable")
+
 
     async def convert(self, param, value) -> str | Any:
         """Attempts to turn x value in y value, using get_converter func for the values
@@ -413,7 +414,7 @@ class Context:
             if len(id) > 0:
                 user = await self.bot.get_user(id[0])
                 return user
-            log.error("You failed to pass valid mention or ID")
+            raise ValueError("User not found")
         return converter(value)
 
     async def get_arguments(self) -> tuple[list, dict]:
@@ -446,11 +447,13 @@ class Context:
                     arg: str | Any = await self.convert(param, splitted.pop(0))
                     args.append(arg)
                 except Exception as e:
-                    log.error(e)
+                    pass
+
             if param.kind is param.VAR_KEYWORD:
                 for arg in splitted:
                     arg = await self.convert(param, arg)
                     args.append(arg)
+
             if param.kind is param.VAR_POSITIONAL:
                 for arg in splitted:
                     arg = await self.convert(param, arg)
@@ -492,7 +495,8 @@ class Context:
             await func(*args, **kwargs)
         except Exception as e:
             error = "".join(format_exception(e, e, e.__traceback__))
-            log.error(f"Could not run command \n{error}")
+            raise Exception(error)
+
 
     async def reply(self, content, file_paths: list = [], delete_after: Optional[int] = None, tts=False) -> Optional[Message]:
         """Helper function to reply to your own message containing the command

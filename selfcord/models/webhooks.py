@@ -5,6 +5,8 @@ from .message import Message
 
 if TYPE_CHECKING:
     from ..bot import Bot
+    from .channels import Channel
+    from .guild import Guild
 
 
 # TODO: Implement webhooks
@@ -22,7 +24,16 @@ class Webhook:
     
     @property
     def avatar(self) -> Asset:
-        return Asset(self.id, self.avatar)
+        return Asset(self.id, self.avatar_hash)
+    
+    @property
+    def channel(self) -> Optional[Channel]:
+        return self.bot.get_channel(self.channel_id)
+    
+    @property
+    def guild(self) -> Optional[Guild]:
+        return self.bot.get_guild(self.guild_id)
+    
 
 
     def update(self, payload: dict):
@@ -32,6 +43,7 @@ class Webhook:
         self.channel_id = payload.get("channel_id")
         self.user = payload.get("user")
         self.name = payload.get("name")
+        self.avatar_hash = payload.get("avatar", "")
 
         self.token = payload.get("token")
         self.application_id = payload.get("application_id")

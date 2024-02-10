@@ -9,6 +9,10 @@ import datetime
 import time
 from .permissions import Permission
 import ujson
+import aiofiles
+import os 
+from io import BytesIO
+import aiohttp
 
 if TYPE_CHECKING:
     from .users import User
@@ -268,9 +272,61 @@ class Messageable(Channel):
             f"/channels/{self.id}/typing"
         )
 
+    async def upload_image(self, paths: list) -> list[dict[str, int | str]]:
+        files = []
+        id = 0
+        for path in paths:
+            if isinstance(path, (bytearray, bytes)):
+                files.append({
+                    "file_size": len(path),
+                    "filename": f"{random.randint(1, 25555)}.png", 
+                    "id": id
+                })
+            elif isinstance(path, BytesIO):
+                files.append({
+                    "file_size": path.getbuffer().nbytes,
+                    "filename": f"{random.randint(1, 25555)}.png", 
+                    "id": id
+                })
+            else:
+                async with aiofiles.open(path, "rb") as f:
+                    file = await f.read()
+                    size = len(file)
+                    name = os.path.basename(path)
+                files.append({"file_size" : size, "filename": f"{name}", "id": id})
+            id += 1
+
+        json = await self.http.request("post", f"/channels/{self.id}/attachments", json={"files": files})
+
+        items = []
+        for key, atch in enumerate(json['attachments']):
+            upload_url = atch['upload_url']
+            id = atch['id']
+            upload_filename = atch['upload_filename']
+            async with aiohttp.ClientSession() as session:
+                if isinstance(paths[key], BytesIO):
+                    file = paths[key].getvalue()
+                elif isinstance(paths[key], (bytes, bytearray)):
+                    file = paths[key]
+                else:
+                    async with aiofiles.open(paths[key], "rb") as f:
+                        file = await f.read()
+                async with session.put(upload_url, data=file): 
+                    pass
+            items.append({"uploaded_filename": upload_filename, "filename": os.path.basename(upload_filename) , "id": id})
+        return items
+
     async def send(
-        self, content: str, files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
+        self, content: str = "", files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
     ) -> Optional[Message]:
+        data = {"content": content, "tts": tts, "nonce": self.nonce}
+
+        if files is not None:
+
+            uploaded_files = await self.upload_image(files)
+            data.update({"attachments": uploaded_files})
+        
+
         if self.type in (1, 3):
             headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
         else:
@@ -279,14 +335,15 @@ class Messageable(Channel):
             "POST",
             f"/channels/{self.id}/messages",
             headers=headers,
-            json={"content": content, "flags": 0, "tts": tts, "nonce": self.nonce},
+            json=data
         )
+ 
         if json is not None:
             if delete_after != None:
                 msg = Message(json, self.bot)
                 await asyncio.create_task(self.delayed_delete(msg, delete_after))
                 return msg
-
+         
             return Message(json, self.bot)
 
     async def delete(self) -> Optional[Messageable]:
@@ -418,8 +475,15 @@ class Messageable(Channel):
                     break
                 n += len(msg)
                 msgs.extend(msg)
-
         return msgs
+    
+    async def get_webhooks(self) -> Optional[list[Webhook]]:
+        json = await self.http.request(
+            "GET", f"/channels/{self.id}/webhooks"
+        )
+        if json is not None:
+            return [Webhook(webhook, self.bot) for webhook in json]
+
 
     async def purge(self, amount: int):
         msgs = await self.history(amount, bot_user_only=True)

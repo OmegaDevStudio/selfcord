@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Literal
 from .assets import Asset
 from .permissions import Permission
 
@@ -167,7 +167,7 @@ class User:
         json = await self.http.request(
             "post", "/users/@me/channels", json={"recipients": [self.id if self.id is not None else ""]}
         )
-        print(json)
+        # print(json)
 
         return Convert(json, self.bot)
 
@@ -203,23 +203,81 @@ class Client(User):
             if hasattr(self, key):
                 setattr(self, key, value)
 
-    async def change_display_name(self, global_name: str):
+    
+
+    async def add_friend(self, username: str, discriminator: Optional[str] = None):
+        json = await self.http.request(
+            "post", "/users/@me/relationships", json={"username": username, "discriminator": discriminator}
+        )
+        if json is not None:
+            return User(json, self.bot)
+        
+
+    async def add_friend_id(self, id: str):
+        json = await self.http.request(
+            "PUT", "/users/@me/relationships/" + id, json={}
+
+        )
+        if json is not None:
+            return User(json, self.bot)
+
+
+    async def create_group(self, recipients: list[str], name: str):
+        json = await self.http.request(
+            "post", "/users/@me/channels", json={"recipients": recipients, "name": name}
+        )
+        if json is not None:
+            return Convert(json, self.bot)
+
+
+    async def edit_display_name(self, global_name: str):
         await self.http.request(
             "PATCH", "/users/@me",
             json={"global_nane": global_name}
         )
 
-    async def change_pfp(self, avatar_url: str, animated: bool = False):
+    async def edit_pfp(self, avatar_url: str, animated: bool = False):
         await self.http.request(
             "PATCH", "/users/@me",
-            json={"avatar": self.http.encode_image(avatar_url, animated)}
+            json={"avatar": (await self.http.encode_image(avatar_url, animated))}
         )
 
-    async def change_banner(self, banner_url: str, animated: bool = False):
+    async def edit_banner(self, banner_url: str, animated: bool = False):
         await self.http.request(
             "PATCH", "/users/@me/profile",
-            json={"avatar": self.http.encode_image(banner_url, animated)}
+            json={"avatar": (await self.http.encode_image(banner_url, animated))}
         )
+
+    async def edit_bio(self, bio: str):
+        await self.http.request(
+            "PATCH", "/users/@me/profile",
+            json={"bio": bio}
+        )
+    
+
+    async def redeem_nitro(self, code: str):
+        json = await self.http.request(
+            "post", f"/entitlements/gift-codes/{code}/redeem" + code, json={}
+        )
+        return json
+    
+    async def edit_hypesquad(self, house: int | Literal["bravery", "brilliance", "balance"]):
+        match house:
+            case "bravery":
+                house = 1
+            case "brilliance":
+                house = 2
+            case "balance":
+                house = 3
+            case _:
+                raise ValueError("Invalid house")
+            
+        await self.http.request(
+            "post", "/hypesquad/online", json={"house_id": house}
+        )
+                                               
+                                               
+    
 
 class Member(User):
     def __init__(self, payload: dict, bot: Bot):

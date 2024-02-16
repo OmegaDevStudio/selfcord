@@ -262,9 +262,6 @@ class Guild:
                 msgs.extend(msg)
 
         return msgs
-        
-
-
 
     async def get_members(self):
         asyncio.create_task(self.bot.gateway.chunk_members(self))
@@ -273,6 +270,12 @@ class Guild:
         await self.http.request(
             "POST", f"/guilds/{self.id}/delete"
         )
+    
+    async def leave(self, lurking: bool = False):
+        await self.http.request(
+            "DELETE", f"/users/@me/guilds/{self.id}", json={"lurking": lurking}
+        )
+
 
     async def create_role(self, name: str, color: int = 0, permissions: int = 0):
         json = await self.http.request(

@@ -87,7 +87,7 @@ class Gateway:
                 try:
                     buffer.extend(item)
                 except:
-                    await aprint(item, self.bot.user.username)
+                    buffer = item
                 if len(item) < 4 or item[-4:] != self.zlib_suffix:
                     return
                 n = len(item)
@@ -127,7 +127,7 @@ class Gateway:
                     
 
                 elif self.op == self.RECONNECT:
-                    await aprint(f"Attempting reconnect???? {self.bot.user.username}")
+                    # await aprint(f"Attempting reconnect???? {self.bot.user.username}")
                     # await self.linux_run(f"notify-send 'RECONNECT HAPPENING NOW CHECK CONSOLE {data} {op}'")
                     await self.close()
                     await asyncio.sleep(2)
@@ -151,10 +151,10 @@ class Gateway:
         self.zlib = decompressobj(15)
 
     async def handle_reconnect(self, e: ConnectionClosed):
-        await aprint(f"Closing because fail. Attempting reconnect {self.bot.user.username}\n{e}")
+        # await aprint(f"Closing because fail. Attempting reconnect {self.bot.user.username}\n{e}")
         if e.rcvd is not None:
             if e.rcvd.code in [1000, 1001, 1011, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
-                await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
+                # await aprint(f"RECEIVE: {e.rcvd.code}  --- {e.rcvd.reason}")
                 await self.close()
                 await asyncio.sleep(2)
                 await self.connect(self.bot.resume_url)
@@ -162,14 +162,14 @@ class Gateway:
                 
         if e.sent is not None:
             if e.sent.code in [1000, 1001, 1011, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009]:
-                await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
+                # await aprint(f"SENT: {e.sent.code} --- {e.sent.reason}")
                 await self.close()
                 await asyncio.sleep(2)
                 await self.connect(self.bot.resume_url)
                 await self.resume()
 
         
-        await aprint("Raising error")
+        # await aprint("Raising error")
         await self.close()
         raise ReconnectWebsocket("Unknown", resume=False, op=False)
 
@@ -191,7 +191,7 @@ class Gateway:
 
 
     async def resume(self):
-        await aprint(self.seq, self.bot.session_id)
+        # await aprint(self.seq, self.bot.session_id)
         await self.send_json({
             "op": self.RESUME,
             "d": {"token": self.token, "session_id": self.bot.session_id, "seq":self.seq},
@@ -336,16 +336,17 @@ class Gateway:
             ranges = self.get_ranges(guild.member_count)
         if channels is None:
             channels = self.correct_channels(guild)
+        self.subscriptions_data[guild.id] = {"channels": {}}
+        self.subscriptions_data[guild.id]["channels"].update({channels[0].id: [0, 99]})
 
-        for channel in channels:
-            self.subscriptions_data[guild.id]["channels"].update({channel.id: [0, 99]})
-        print("subscriptions", self.subscriptions_data)
         payload = {
             "op": 37, 
             "d": {
                 "subscriptions": self.subscriptions_data
             }
         }
+        await self.send_json(payload)
+
 
     async def chunk_members(self, guild: Guild):
         channels = self.correct_channels(guild)
@@ -357,7 +358,7 @@ class Gateway:
                 ranges.append(
                     [i, self.roundup(i + (guild.member_count - i)) - 1]
                 ) if i + 99 > guild.member_count else ranges.append([i, i + 99])
-            print(ranges)
+  
             
         for item in self.chunks(ranges, 3):
 
@@ -390,10 +391,25 @@ class Gateway:
             "d": {
                 "guild_id": guild,
                 "channel_id": channel,
-                "preferred_region": "rotterdam",
+       
                 "self_mute": False,
                 "self_deaf": False,
                 "self_video": False,
+            },
+        }
+        await self.send_json(payload)
+
+
+    async def video_call(self, channel: str, guild: Optional[str] = None):
+        payload = {
+            "op": 4,
+            "d": {
+                "guild_id": guild,
+                "channel_id": channel,
+    
+                "self_mute": False,
+                "self_deaf": False,
+                "self_video": True,
             },
         }
         await self.send_json(payload)

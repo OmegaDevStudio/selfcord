@@ -2,11 +2,9 @@ from typing import Optional, Literal
 import time
 
 class Activity:
-    def __init__(self, status: Literal[
-        "online", "dnd", "idle", "invisible", "offline"
-    ], afk: bool) -> None:
-        self.status = status
-        self.afk = afk
+    def __init__(self) -> None:
+        self.dict = {}
+
 
     def remove_null(self, dic: dict):
         new = {}
@@ -14,15 +12,64 @@ class Activity:
             if value == None:
                 continue
             if isinstance(value, dict):
+        
                 value = self.remove_null(value)
+          
             if value == {}:
                 continue
             new[key] = value
         return new
-    
+
+
+
+    def Playing(
+        self,
+        application_id: str,
+        name: str,
+        details: Optional[str] = None,
+        state: Optional[str] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        large_image: Optional[str] = None,
+        large_text: Optional[str] = None,
+        small_image: Optional[str] = None,
+        small_text: Optional[str] = None,
+        buttons: list[dict[str, str]] = [],
+        party_id: Optional[str] = None,
+        party_size: Optional[list[int]] = None,
+        match_secret: Optional[str] = None,
+        join_secret: Optional[str] = None,
+        spectate_secret: Optional[str] = None,
+        instance: Optional[bool] = None
+    ):
+        self.dict['type'] = 0
+        self.dict['application_id'] = application_id
+        self.dict['name'] = name
+        self.dict['details'] = details
+        self.dict['state'] = state
+        self.dict['timestamps'] = {"start": start, "end": end}
+        self.dict['assets'] = {"large_image": large_image, "large_text": large_text, "small_image": small_image, "small_text": small_text}
+        if len(buttons) > 0:
+            if len(buttons) > 2:
+                raise ValueError("You can only have 2 buttons")
+            self.dict['buttons'] = []
+            self.dict['metadata'] = []
+            for button in buttons:
+                self.dict['buttons'].append(button['label'])
+                self.dict['metadata'].append(button['url'])
+        self.dict['party'] = {"id": party_id, "size": party_size}
+        self.dict['secrets'] = {"match": match_secret, "join": join_secret, "spectate": spectate_secret}
+
+        self.dict['created_at'] = int(time.time())
+        self.dict['instance'] = instance
+        
+        return self.remove_null(self.dict)
+
 
     def Streaming(
-        self, name: str,
+        self,
+        application_id: str,
+        name: str,
         url: Optional[str] = None,
         details: Optional[str] = None,
         state: Optional[str] = None,
@@ -32,64 +79,32 @@ class Activity:
         large_text: Optional[str] = None,
         small_image: Optional[str] = None,
         small_text: Optional[str] = None,
-        party_id: Optional[str] = None,
-        party_size: Optional[list] = None,
-        join: Optional[str] = None,
-        match: Optional[str] = None,
-        spectate: Optional[str] = None,
-        buttons: Optional[list] = None,
-        instance: bool = True, payload_override: Optional[dict] = None
+        buttons: list[dict[str, str]] = [],
     ):
-        if payload_override:
-            payload = payload_override
-        else:
-            if start:
-                start = int(start)
-            if end:
-                end = int(end)
+        self.dict['type'] = 1
+        self.dict['application_id'] = application_id
+        self.dict['name'] = name
+        self.dict['url'] = url
+        self.dict['details'] = details
+        self.dict['state'] = state
+        self.dict['timestamps'] = {"start": start, "end": end}
+        self.dict['assets'] = {"large_image": large_image, "large_text": large_text, "small_image": small_image, "small_text": small_text}
+        if len(buttons) > 0:
+            if len(buttons) > 2:
+                raise ValueError("You can only have 2 buttons")
+            self.dict['buttons'] = []
+            self.dict['metadata'] = []
+            for button in buttons:
+                self.dict['buttons'].append(button['label'])
+                self.dict['metadata'].append(button['url'])
+        self.dict['created_at'] = int(time.time())
+     
+        return self.remove_null(self.dict)
 
-            activity = {
-                "name": name,
-                "type": 1,
-                "state": state,
-                "details": details,
-                "url": url,
-                "timestampts": {
-                    "start": start,
-                    "end": end
-                },
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text,
-                    "small_image": small_image,
-                    "small_text": small_text,
-                },
-                "party": {
-                    "party_id": party_id,
-                    "size": party_size
-                },
-                "secrets": {
-                    "join": join,
-                    "spectate": spectate,
-                    "match": match
-                },
-                "buttons": buttons,
-                "instance": instance
-            }
-            activity = self.remove_null(activity)
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": 0,
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-        return payload
 
-    def Listening(
-        self, name: str,
+    def Listening(self,
+        application_id: str,
+        name: str,
         details: Optional[str] = None,
         state: Optional[str] = None,
         start: Optional[int] = None,
@@ -98,334 +113,96 @@ class Activity:
         large_text: Optional[str] = None,
         small_image: Optional[str] = None,
         small_text: Optional[str] = None,
-        party_id: Optional[str] = None,
-        party_size: Optional[list] = None,
-        join: Optional[str] = None,
-        match: Optional[str] = None,
-        spectate: Optional[str] = None,
-        buttons: Optional[list] = None,
-        instance: bool = True, payload_override: Optional[dict] = None
+        buttons: list[dict[str, str]] = [],
     ):
-        if payload_override:
-            payload = payload_override
-        else:
-            if start:
-                start = int(start)
-            if end:
-                end = int(end)
-
-            activity = {
-                "name": name,
-                "type": 2,
-                "state": state,
-                "details": details,
-                "timestampts": {
-                    "start": start,
-                    "end": end
-                },
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text,
-                    "small_image": small_image,
-                    "small_text": small_text,
-                },
-                "party": {
-                    "party_id": party_id,
-                    "size": party_size
-                },
-                "secrets": {
-                    "join": join,
-                    "spectate": spectate,
-                    "match": match
-                },
-                "buttons": buttons,
-                "instance": instance
-            }
-            activity = self.remove_null(activity)
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": 0,
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-        return payload
-
-    def Watching(
-        self, name: str,
-        details: Optional[str] = None,
-        state: Optional[str] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        large_image: Optional[str] = None,
-        large_text: Optional[str] = None,
-        small_image: Optional[str] = None,
-        small_text: Optional[str] = None,
-        party_id: Optional[str] = None,
-        party_size: Optional[list] = None,
-        join: Optional[str] = None,
-        match: Optional[str] = None,
-        spectate: Optional[str] = None,
-        buttons: Optional[list] = None,
-        instance: bool = True, payload_override: Optional[dict] = None
-    ):
-        if payload_override:
-            payload = payload_override
-        else:
-            if start:
-                start = int(start)
-            if end:
-                end = int(end)
-
-            activity = {
-                "name": name,
-                "type": 3,
-                "state": state,
-                "details": details,
-                "timestampts": {
-                    "start": start,
-                    "end": end
-                },
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text,
-                    "small_image": small_image,
-                    "small_text": small_text,
-                },
-                "party": {
-                    "party_id": party_id,
-                    "size": party_size
-                },
-                "secrets": {
-                    "join": join,
-                    "spectate": spectate,
-                    "match": match
-                },
-                "buttons": buttons,
-                "instance": instance
-            }
-            activity = self.remove_null(activity)
-
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": 0,
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-        return payload
-
-    def Competing(
-        self, name: str,
-        details: Optional[str] = None,
-        state: Optional[str] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        large_image: Optional[str] = None,
-        large_text: Optional[str] = None,
-        small_image: Optional[str] = None,
-        small_text: Optional[str] = None,
-        party_id: Optional[str] = None,
-        party_size: Optional[list] = None,
-        join: Optional[str] = None,
-        match: Optional[str] = None,
-        spectate: Optional[str] = None,
-        buttons: Optional[list] = None,
-        instance: bool = True, payload_override: Optional[dict] = None
-    ):
-        if payload_override:
-            payload = payload_override
-        else:
-            if start:
-                start = int(start)
-            if end:
-                end = int(end)
-
-            activity = {
-                "name": name,
-                "type": 5,
-                "state": state,
-                "details": details,
-                "timestampts": {
-                    "start": start,
-                    "end": end
-                },
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text,
-                    "small_image": small_image,
-                    "small_text": small_text,
-                },
-                "party": {
-                    "party_id": party_id,
-                    "size": party_size
-                },
-                "secrets": {
-                    "join": join,
-                    "spectate": spectate,
-                    "match": match
-                },
-                "metadata": buttons,
-                "instance": instance
-            }
-            
-            activity = self.remove_null(activity)
-
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": 0,
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-        return payload
-
-    def Custom(self, status: str, emoji_name: Optional[str] = None, id: Optional[str] = None, animated: Optional[bool] = None):
-        activity = {
-            "type": 4,
-            "name": "Custom Status",
-            "state": status,
-            "emoji": {
-                "name": emoji_name,
-                "id": id,
-                "animated": animated
-            }
-        }
-        activity = self.remove_null(activity)
-        
-        if "emoji" not in activity:
-            activity["emoji"] = None
-            
-      
-        payload = {
-            "op": 3,
-            "d": {
-                "since": 0,
-                "activities": [activity],
-                "status": self.status,
-                "afk": self.afk
-            }
-        }
-        
-        return payload
-
-    def Playing(
-        self, name: str,
-        application_id: Optional[str] = None,
-        state: Optional[str] = None,
-        details: Optional[str] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        large_image: Optional[str] = None,
-        large_text: Optional[str] = None,
-        small_image: Optional[str] = None,
-        small_text: Optional[str] = None,
-        party_id: Optional[str] = None,
-        party_size: Optional[list] = None,
-        join: Optional[str] = None,
-        match: Optional[str] = None,
-        spectate: Optional[str] = None,
-        buttons: Optional[list] = None,
-        instance: bool = True, payload_override: Optional[dict] = None
-    ):
-        if payload_override:
-            payload = payload_override
-        else:
-            if start:
-                start = int(start)
-            if end:
-                end = int(end)
-
-            activity = {
-                "name": name,
-                "type": 0,
-                "state": state,
-                "details": details,
-                "timestampts": {
-                    "start": start,
-                    "end": end
-                },
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text,
-                    "small_image": small_image,
-                    "small_text": small_text,
-                },
-                "party": {
-                    "party_id": party_id,
-                    "size": party_size
-                },
-                "secrets": {
-                    "join": join,
-                    "spectate": spectate,
-                    "match": match
-                },
-                "buttons": buttons,
-                
-                "instance": instance
-            }
-
-            
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": 0,
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-        return payload
+        self.dict['type'] = 2
+        self.dict['application_id'] = application_id
+        self.dict['name'] = name
+        self.dict['details'] = details
+        self.dict['state'] = state
+        self.dict['timestamps'] = {"start": start, "end": end}
+        self.dict['assets'] = {"large_image": large_image, "large_text": large_text, "small_image": small_image, "small_text": small_text}
+        if len(buttons) > 0:
+            if len(buttons) > 2:
+                raise ValueError("You can only have 2 buttons")
+            self.dict['buttons'] = []
+            self.dict['metadata'] = []
+            for button in buttons:
+                self.dict['buttons'].append(button['label'])
+                self.dict['metadata'].append(button['url'])
+        self.dict['created_at'] = int(time.time())
+ 
+        return self.remove_null(self.dict)
     
-    def Spotify(self,
-        end: int,
-        large_image: str,
-        large_text: str,
-        details: str,
-        state: str,
-        party_id: str,
-        ):
+    def Watching(self,
+        application_id: str,
+        name: str,
+        details: Optional[str] = None,
+        state: Optional[str] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        large_image: Optional[str] = None,
+        large_text: Optional[str] = None,
+        small_image: Optional[str] = None,
+        small_text: Optional[str] = None,
+        buttons: list[dict[str, str]] = [],
+    ):
+        self.dict['type'] = 3
+        self.dict['application_id'] = application_id
+        self.dict['name'] = name
+        self.dict['details'] = details
+        self.dict['state'] = state
+        self.dict['timestamps'] = {"start": start, "end": end}
+        self.dict['assets'] = {"large_image": large_image, "large_text": large_text, "small_image": small_image, "small_text": small_text}
+        if len(buttons) > 0:
+            if len(buttons) > 2:
+                raise ValueError("You can only have 2 buttons")
+            self.dict['buttons'] = []
+            self.dict['metadata'] = []
+            for button in buttons:
+                self.dict['buttons'].append(button['label'])
+                self.dict['metadata'].append(button['url'])
+        self.dict['created_at'] = int(time.time())
 
+        return self.remove_null(self.dict)
 
-            activity = {
-                "type": 2,
-                "name": "Spotify",
-                "assets": {
-                    "large_image": large_image,
-                    "large_text": large_text
-                },
-                "details": details,
-                "state": state,
-                "timestamps": {
-                    "start": int(time.time()),
-                    "end": end
-                },
-                "party": {
-                    "id": party_id,
-                },
-                "sync_id": "spotify",
-                "flags": 48,
-                "metadata": {
-                    "context_uri": "spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",
-                    "album_id": "382659064",
-                    "artist_ids": ["06HL4z0CvFAxyc27GXpf02"],
-                },
-        
-            }
-            payload = {
-                "op": 3,
-                "d": {
-                    "since": time.time(),
-                    "activities": [activity],
-                    "status": self.status,
-                    "afk": self.afk
-                }
-            }
-            return payload
-            
+    def Custom(self, state: str, emoji: Optional[str] = None, id: Optional[str] = None, animated: Optional[bool] = None):
+        self.dict['type'] = 4
+        self.dict['state'] = state
+        self.dict['emoji'] = {"name": emoji, "id": id, "animated": animated}
+
+        self.remove_null(self.dict)
+        return self.remove_null(self.dict)
+
+    def Competing(self,
+        application_id: str,
+        name: str,
+        details: Optional[str] = None,
+        state: Optional[str] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        large_image: Optional[str] = None,
+        large_text: Optional[str] = None,
+        small_image: Optional[str] = None,
+        small_text: Optional[str] = None,
+        buttons: list[dict[str, str]] = [],
+    ):
+        self.dict['type'] = 5
+        self.dict['application_id'] = application_id
+        self.dict['name'] = name
+        self.dict['details'] = details
+        self.dict['state'] = state
+        self.dict['timestamps'] = {"start": start, "end": end}
+        self.dict['assets'] = {"large_image": large_image, "large_text": large_text, "small_image": small_image, "small_text": small_text}
+        if len(buttons) > 0:
+            if len(buttons) > 2:
+                raise ValueError("You can only have 2 buttons")
+            self.dict['buttons'] = []
+            self.dict['metadata'] = []
+            for button in buttons:
+                self.dict['buttons'].append(button['label'])
+                self.dict['metadata'].append(button['url'])
+        self.dict['created_at'] = int(time.time())
+       
+        return self.remove_null(self.dict)
+

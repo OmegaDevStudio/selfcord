@@ -197,14 +197,17 @@ class Handler:
         await asyncio.sleep(4)
 
         for guild in self.bot.user.guilds:
-            if guild.member_count >= 1000:
-                n = 0
-                for channel in guild.channels:
-                    if channel.type == 0:
-                        n += 1
-                        await self.bot.gateway.cache_guild(guild, guild.channels[0])
-                    if n >= 3:
-                        break
+            try:
+                if guild.member_count >= 1000:
+                    n = 0
+                    for channel in guild.channels:
+                        if channel.type == 0:
+                            n += 1
+                            await self.bot.gateway.cache_guild(guild, guild.channels[0])
+                        if n >= 3:
+                            break
+            except:
+                continue
                     
     
     async def handle_message_create(self, data: dict):
@@ -277,7 +280,7 @@ class Handler:
         await self.bot.emit("guild_member_list_update", MemberListUpdate(data, self.bot))
 
     async def handle_call_update(self, data: dict):
-        await aprint(data)
+        pass
 
     async def handle_call_create(self, data: dict):
         await self.bot.emit("call_create", CallCreate(data, self.bot))

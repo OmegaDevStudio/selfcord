@@ -495,8 +495,11 @@ class Bot:
     async def logout(self):
         await self.gateway.close()
 
-    async def change_presence(self, activity: dict):
-        await self.gateway.send_json(activity)
+    async def change_presence(self, activity: list[dict], status: Literal["online", "idle", "dnd", "invisible"] = "online", afk: bool = False):
+        d = {"op": 3, "d": {"activities": activity, "status": status, "afk": afk, "since": int(time.time())}}
+
+        await self.gateway.send_json(d)
+
 
     async def process_commands(self, msg):
         """

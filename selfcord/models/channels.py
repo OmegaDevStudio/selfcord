@@ -156,8 +156,20 @@ class Callable(Channel):
         if self.bot.gateway.voice:
             self.bot.gateway.voice.channel = self.id
             asyncio.create_task(self.bot.gateway.voice.start())
-            
+        
+    async def video_call(self):
+        if self.type in (1,3):
+            await self.bot.gateway.video_call(self.id, None)
+        else:
+            await self.bot.gateway.video_call(self.id, self.guild_id)
+        if self.guild_id is None:
+            await self.ring()
 
+        await asyncio.sleep(1.5)
+        if self.bot.gateway.voice:
+            self.bot.gateway.voice.channel = self.id
+            asyncio.create_task(self.bot.gateway.voice.start())
+        
     async def ring(self):
         await self.http.request(
             "POST", f"/channels/{self.id}/call/ring",
@@ -218,14 +230,18 @@ class Messageable(Channel):
             if json is not None:
                 cmds = []
                 for cmd in json['application_commands']:
+                    if name is not None:
+                        if cmd['name'] != name:
+                            continue
+
                     if cmd.get("guild_id") is None:
                         cmd.update({"guild_id": self.guild_id})
                     cmds.append(SlashCommand(cmd, self.bot))
-                if name is not None:
-                    for cmd in cmds:
-                        if cmd.name.lower() == name.lower():
-                            return cmd
-                return cmds
+                
+                if len(cmds) == 1:
+                    return cmds[0]
+                else:
+                    return cmds
             
     async def trigger_slash(self, cmd: SlashCommand):
         if self.guild_id is not None:
@@ -548,6 +564,16 @@ class GroupChannel(Messageable, Callable):
         )
         self.name: Optional[str] = payload.get("name")
         self.last_pin_timestamp: Optional[int] = payload.get("last_pin_timestamp")
+
+    async def leave(self):
+        await self.http.request("DELETE", "/channels/" + self.id)
+
+    async def edit(self, name: str, icon_url: Optional[str] = None):
+        payload = {"name": name}
+        if icon_url is not None:
+            payload["icon"] = await self.http.encode_image(icon_url)
+
+        await self.http.request("PATCH", "/channels/" + self.id, json=payload)
 
 
 class TextChannel(Messageable):

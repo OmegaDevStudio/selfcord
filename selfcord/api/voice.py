@@ -80,7 +80,10 @@ class Voice:
         self._lite_nonce = 0
         self.sequence = 0
         self.timestamp = 0
-        self.encoder = opuslib.Encoder(SAMPLING_RATE, CHANNELS, application=2049) 
+        try:
+            self.encoder = opuslib.Encoder(SAMPLING_RATE, CHANNELS, application=2049) 
+        except:
+            pass
         self.socket: Optional[socket.socket] = None
 
 
@@ -177,7 +180,7 @@ class Voice:
 
             await self.speaking(speak=True)
             if self.socket:
-                await aprint("sending", len(data), f"LEFT: {len(self.source)}")
+                # await aprint("sending", len(data), f"LEFT: {len(self.source)}")
                 self.socket.sendto(packet, (self.ip, self.port))
 
             next_time = start + (FRAME_LENGTH / 1000) * loops

@@ -7,9 +7,9 @@
 <img src="https://img.shields.io/badge/MADE%20WITH-PYTHON-red?logoColor=red&logo=Python&style=for-the-badge">
 </a>
 <a href="https://pypi.org/project/selfcord/">
-<img src="https://img.shields.io/badge/version-0.2.4-blue?logo=adguard&style=for-the-badge">
+<img src="https://img.shields.io/badge/version-1.0.0-blue?logo=adguard&style=for-the-badge">
 </a>
-<a href="https://github.com/Shell1010/Selfcord/wiki">
+<a href="https://github.com/OmegaDevStudio/Selfcord/wiki">
 <img src="https://img.shields.io/badge/documentation-green?logo=gitbook&style=for-the-badge">
 </a>
 </div>

@@ -17,7 +17,7 @@ if __name__ == "__main__":
                 "selfcord.api.voice",
             ]
         ),
-        version="0.2.4",
+        version="1.0.0",
         description="A Discord API wrapper designed for selfbots!",
         readme="README.md",
         author="Shell",
@@ -40,6 +40,6 @@ if __name__ == "__main__":
         test_suite="tests",
         keywords=["selfbot", "discord", "discordapi", "discordwrapper"],
         long_description=long_description,
-        url="https://github.com/Shell1010/Selfcord",
+        url="https://github.com/OmegaDevStudio/Selfcord",
         long_description_content_type="text/markdown",
     )

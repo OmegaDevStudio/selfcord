@@ -46,7 +46,8 @@ if TYPE_CHECKING:
 if sys.platform == "linux":
     import uvloop
     uvloop.install()
-if sys.platform.startswith("win"):
+
+if sys.platform.lower().startswith("win"):
     import winloop # type: ignore
     winloop.install()
 

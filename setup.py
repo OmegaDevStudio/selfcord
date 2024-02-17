@@ -34,7 +34,17 @@ if __name__ == "__main__":
             "ujson==5.7.0",
             "aiofiles==0.8.0",
             "requests==2.31.0",
-        ] + ["uvloop==0.17.0"] if sys.platform == "linux" else ["winloop==0.1.0"],
+            "uvloop==0.17.0"
+        ] if sys.platform == "linux" else 
+        [
+            "aiohttp==3.8.5",
+            "aioconsole==0.3.3",
+            "websockets==10.1",
+            "ujson==5.7.0",
+            "aiofiles==0.8.0",
+            "requests==2.31.0",
+            "winloop==0.1.0"
+        ],
         setup_requires=["pytest-runner"],
         tests_require=["pytest"],
         test_suite="tests",

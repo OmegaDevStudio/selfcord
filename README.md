@@ -31,7 +31,7 @@ pip install selfcord.py
 
 ## Wiki
 
-Read our [Wiki](https://github.com/Shell1010/Selfcord/wiki) in regards to documentation and getting started.
+Read our [Wiki](https://github.com/OmegaDevStudio/Selfcord/wiki) in regards to documentation and getting started.
 
 ## Getting Started
 A selfbot that responds to a message ("ping!") with another message ("pong").

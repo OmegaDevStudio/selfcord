@@ -216,8 +216,9 @@ class Handler:
         if message.author.id not in self.bot.cached_users:
             self.bot.cached_users[message.author.id] = message.author
         
+        # await aprint("Processing")
         await self.bot.process_commands(message)
-        
+        # await aprint("Processed")
         await self.bot.emit("message", message)
 
     async def handle_message_update(self, data: dict):

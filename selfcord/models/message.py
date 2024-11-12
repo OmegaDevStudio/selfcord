@@ -77,7 +77,7 @@ class Message:
             },
             "allowed_mentions":{"parse":["users","roles","everyone"],"replied_user":True},"flags":0
         }
-        if files is not None:
+        if files is not None and len(files) > 0:
             uploaded_files = await self.channel.upload_image(files)
             data.update({"files": uploaded_files})
 

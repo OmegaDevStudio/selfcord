@@ -8,6 +8,7 @@ from traceback import format_exception
 from typing import TYPE_CHECKING, Any, Optional
 from ..models import Message
 from .logging import logging
+from aioconsole import aprint
 
 if TYPE_CHECKING:
     from ..api import *
@@ -498,7 +499,7 @@ class Context:
             raise Exception(error)
 
 
-    async def reply(self, content, file_paths: list = [], delete_after: Optional[int] = None, tts=False) -> Optional[Message]:
+    async def reply(self, content, file_paths: Optional[list] = None, delete_after: Optional[int] = None, tts=False) -> Optional[Message]:
         """Helper function to reply to your own message containing the command
 
         Args:

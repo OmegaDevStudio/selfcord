@@ -337,7 +337,7 @@ class Messageable(Channel):
     ) -> Optional[Message]:
         data = {"content": content, "tts": tts, "nonce": self.nonce}
 
-        if files is not None:
+        if files is not None and len(files) > 0:
 
             uploaded_files = await self.upload_image(files)
             data.update({"attachments": uploaded_files})

@@ -155,7 +155,7 @@ class Bot:
             async def help(ctx, cat=None):
                 """The help command, dedicated to viewing all commands, extensions and information regarding commands."""
                 if cat is None:
-                    msg = f"```ini\n[ {self.user.username} Selfbot ]\n"
+                    msg = f"```ini\n"
                     msg += f"[ {self.user} ]\nType <prefix>help <ext_name> to view commands relating to a specific extension. Type <prefix>help <cmd_name> to view information regarding a command.\n[ .Prefixes ] : {self.prefixes}\n\n"
                     msg += f"[ .Commands ]\n"
                     for command in self.commands:

@@ -312,7 +312,15 @@ class Guild:
             json={"name": name, "type": 2, "permission_overwrites": permission_overwrites}
         )
         return Convert(json, self.bot) or None
-
+    
+    async def ban_list(self):
+        
+        json = await self.http.request(
+            "GET",
+            f"/guilds/{self.id}/bans?limit=1000",
+        )
+        json = json if json is not None else []
+        return [Member(data['user'], self.bot) for data in json]
 
 class Emoji:
     def __init__(self, payload: dict, bot: Bot):

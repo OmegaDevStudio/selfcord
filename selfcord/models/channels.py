@@ -1,24 +1,26 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Literal
-from .message import Message
-from .webhooks import Webhook
-from .assets import Asset
-import random
+
 import asyncio
 import datetime
+import os
+import random
 import time
-from .permissions import Permission
-import ujson
-import aiofiles
-import os 
 from io import BytesIO
+from typing import TYPE_CHECKING, Literal, Optional
+
+import aiofiles
 import aiohttp
+import ujson
+
+from .assets import Asset
+from .message import Message
+from .permissions import Permission
+from .webhooks import Webhook
 
 if TYPE_CHECKING:
-    from .users import User
-    from ..bot import Bot
     from ..api import HttpClient
-
+    from ..bot import Bot
+    from .users import User
 
 
 class PermissionOverwrite:
@@ -34,8 +36,6 @@ class PermissionOverwrite:
         self.deny: Permission = Permission(payload["deny"], self.bot)
 
 
-
-
 class SlashCommand:
     def __init__(self, payload: dict, bot: Bot) -> None:
         self.bot = bot
@@ -43,7 +43,7 @@ class SlashCommand:
         self.update(payload)
 
     def update(self, payload):
-        
+
         self.id = payload.get("id")
         self.type = payload.get("type")
         self.application_id = payload.get("application_id")
@@ -52,41 +52,43 @@ class SlashCommand:
         self.name = payload.get("name")
         self.description = payload.get("description")
         self.description_default = payload.get("description_default")
-        self.options = [SubCommandOption(option, self) for option in payload.get("options", [])]
+        self.options = [
+            SubCommandOption(option, self) for option in payload.get("options", [])
+        ]
         self.my_options = []
         self.integration_types = payload.get("integration_types")
         self.raw_data = payload
         self.required = payload.get("required", False)
-        
+
     def add_value(self, name: str, value):
         new = {}
-        
+
         if type(value) == list:
             for option in self.options:
                 if option.name == name:
-                    new['name'] = name
-                    new['type'] = option.type
-                    new['options'] = value
+                    new["name"] = name
+                    new["type"] = option.type
+                    new["options"] = value
             return self.my_options.append(new)
-        
+
         for option in self.options:
             if option.name == name:
-                new['name'] = name
-                new['value'] = value
-                new['type'] = option.type
+                new["name"] = name
+                new["value"] = value
+                new["type"] = option.type
         return self.my_options.append(new)
-        
+
     def get_option(self, name: str) -> Optional[SubCommandOption]:
         for option in self.options:
             if option.name == name:
                 return option
 
+
 class SubCommandOption(SlashCommand):
     def __init__(self, payload: dict, main: SlashCommand) -> None:
         self.cmd = main
         self.update(payload)
-        
-        
+
     def update(self, payload):
         self.opt_options = payload.get("options", [])
         self.name = payload.get("name")
@@ -94,20 +96,18 @@ class SubCommandOption(SlashCommand):
         self.required = payload.get("required", False)
         self.type = payload.get("type")
         self.my_options = []
-        
+
     def add_value(self, name: str, value):
         new = {}
         for option in self.opt_options:
             if option.get("name", "") == name:
-                new['name'] = name
-                new['value'] = value
-                new['type'] = option['type']
+                new["name"] = name
+                new["value"] = value
+                new["type"] = option["type"]
         self.my_options.append(new)
-    
-    
+
     def reconstruct(self):
         self.cmd.add_value(self.name, self.my_options)
-        
 
 
 class Channel:
@@ -122,15 +122,13 @@ class Channel:
         self.flags = payload.get("flags")
         self.last_message_id = payload.get("last_message_id")
         self.guild_id = payload.get("guild_id")
-    
+
     @property
     def guild(self):
         return self.bot.fetch_guild(self.guild_id)
 
     async def delete(self):
-        await self.http.request(
-            "delete", "/channels/" + self.id, json={}
-        )
+        await self.http.request("delete", "/channels/" + self.id, json={})
 
 
 class Callable(Channel):
@@ -145,7 +143,7 @@ class Callable(Channel):
         pass
 
     async def call(self):
-        if self.type in (1,3):
+        if self.type in (1, 3):
             await self.bot.gateway.call(self.id, None)
         else:
             await self.bot.gateway.call(self.id, self.guild_id)
@@ -156,9 +154,9 @@ class Callable(Channel):
         if self.bot.gateway.voice:
             self.bot.gateway.voice.channel = self.id
             asyncio.create_task(self.bot.gateway.voice.start())
-        
+
     async def video_call(self):
-        if self.type in (1,3):
+        if self.type in (1, 3):
             await self.bot.gateway.video_call(self.id, None)
         else:
             await self.bot.gateway.video_call(self.id, self.guild_id)
@@ -169,11 +167,10 @@ class Callable(Channel):
         if self.bot.gateway.voice:
             self.bot.gateway.voice.channel = self.id
             asyncio.create_task(self.bot.gateway.voice.start())
-        
+
     async def ring(self):
         await self.http.request(
-            "POST", f"/channels/{self.id}/call/ring",
-            json={"recipients": None}
+            "POST", f"/channels/{self.id}/call/ring", json={"recipients": None}
         )
 
     async def leave_call(self):
@@ -181,7 +178,6 @@ class Callable(Channel):
         if self.bot.gateway.voice:
             self.bot.gateway.voice.channel = None
             await self.bot.gateway.voice.close()
-
 
 
 class Messageable(Channel):
@@ -212,7 +208,7 @@ class Messageable(Channel):
             unixts = time.time()
         else:
             unixts = time.mktime(date.timetuple())
-        return (int(unixts)*1000-1420070400000)*4194304
+        return (int(unixts) * 1000 - 1420070400000) * 4194304
 
     @property
     def nonce(self) -> int:
@@ -222,31 +218,33 @@ class Messageable(Channel):
         await asyncio.sleep(time)
         await message.delete()
 
-    async def get_slash_commands(self, name: Optional[str] = None) -> Optional[SlashCommand] | Optional[list[SlashCommand]]:
+    async def get_slash_commands(
+        self, name: Optional[str] = None
+    ) -> Optional[SlashCommand] | Optional[list[SlashCommand]]:
         if self.guild_id is not None:
             json = await self.http.request(
                 "GET", f"/guilds/{self.guild_id}/application-command-index"
             )
             if json is not None:
                 cmds = []
-                for cmd in json['application_commands']:
+                for cmd in json["application_commands"]:
                     if name is not None:
-                        if cmd['name'] != name:
+                        if cmd["name"] != name:
                             continue
 
                     if cmd.get("guild_id") is None:
                         cmd.update({"guild_id": self.guild_id})
                     cmds.append(SlashCommand(cmd, self.bot))
-                
+
                 if len(cmds) == 1:
                     return cmds[0]
                 else:
                     return cmds
-            
+
     async def trigger_slash(self, cmd: SlashCommand):
         if self.guild_id is not None:
             # print(cmd.my_options)
-            
+
             json = {
                 "type": 2,
                 "application_id": cmd.application_id,
@@ -254,71 +252,72 @@ class Messageable(Channel):
                 "channel_id": self.id,
                 "session_id": self.bot.session_id,
                 "data": {
-                    "version": cmd.version, # version not appending
+                    "version": cmd.version,  # version not appending
                     "id": cmd.id,
                     "name": cmd.name,
                     "type": cmd.type,
                     "options": cmd.my_options,
-                    "application_command": cmd.raw_data
-                }
+                    "application_command": cmd.raw_data,
+                },
             }
             json = ujson.dumps(json)
-            boundary = f"----WebkitFormBoundaryNiggerNiggerSexy"
+            boundary = f"----WebkitFormBoundaryAbCdEfGhIjKlmNoP"
             data = f'--{boundary}\r\nContent-Disposition: form-data; name="payload_json"\r\n\r\n{json}\r\n--{boundary}--'
-            
+
             json = await self.http.request(
-                "POST", "/interactions",
+                "POST",
+                "/interactions",
                 headers={"content-type": f"multipart/form-data; boundary={boundary}"},
-                data=data
+                data=data,
             )
 
     async def create_webhook(self, name: str):
         json = await self.http.request(
-            "POST",
-            f"/channels/{self.id}/webhooks",
-            json={"name": name}
+            "POST", f"/channels/{self.id}/webhooks", json={"name": name}
         )
         if json is not None:
             return Webhook(json, self.bot)
 
-
     async def typing(self):
-        await self.http.request(
-            "POST",
-            f"/channels/{self.id}/typing"
-        )
+        await self.http.request("POST", f"/channels/{self.id}/typing")
 
     async def upload_image(self, paths: list) -> list[dict[str, int | str]]:
         files = []
         id = 0
         for path in paths:
             if isinstance(path, (bytearray, bytes)):
-                files.append({
-                    "file_size": len(path),
-                    "filename": f"{random.randint(1, 25555)}.png", 
-                    "id": id
-                })
+                files.append(
+                    {
+                        "file_size": len(path),
+                        "filename": f"{random.randint(1, 25555)}.png",
+                        "id": id,
+                    }
+                )
             elif isinstance(path, BytesIO):
-                files.append({
-                    "file_size": path.getbuffer().nbytes,
-                    "filename": f"{random.randint(1, 25555)}.png", 
-                    "id": id
-                })
+                files.append(
+                    {
+                        "file_size": path.getbuffer().nbytes,
+                        "filename": f"{random.randint(1, 25555)}.png",
+                        "id": id,
+                    }
+                )
             else:
                 async with aiofiles.open(path, "rb") as f:
                     file = await f.read()
                     size = len(file)
                     name = os.path.basename(path)
-                files.append({"file_size" : size, "filename": f"{name}", "id": id})
+                files.append({"file_size": size, "filename": f"{name}", "id": id})
             id += 1
 
-        json = await self.http.request("post", f"/channels/{self.id}/attachments", json={"files": files})
+        json = await self.http.request(
+            "post", f"/channels/{self.id}/attachments", json={"files": files}
+        )
 
         items = []
-        for key, atch in enumerate(json['attachments']):
-            upload_url = atch['upload_url']
-            id = atch['id']
-            upload_filename = atch['upload_filename']
+        for key, atch in enumerate(json["attachments"]):
+            upload_url = atch["upload_url"]
+            id = atch["id"]
+            upload_filename = atch["upload_filename"]
             async with aiohttp.ClientSession() as session:
                 if isinstance(paths[key], BytesIO):
                     file = paths[key].getvalue()
@@ -327,13 +326,23 @@ class Messageable(Channel):
                 else:
                     async with aiofiles.open(paths[key], "rb") as f:
                         file = await f.read()
-                async with session.put(upload_url, data=file): 
+                async with session.put(upload_url, data=file):
                     pass
-            items.append({"uploaded_filename": upload_filename, "filename": os.path.basename(upload_filename) , "id": id})
+            items.append(
+                {
+                    "uploaded_filename": upload_filename,
+                    "filename": os.path.basename(upload_filename),
+                    "id": id,
+                }
+            )
         return items
 
     async def send(
-        self, content: str = "", files: Optional[list[str]] = None, delete_after: Optional[int] = None, tts: bool = False
+        self,
+        content: str = "",
+        files: Optional[list[str]] = None,
+        delete_after: Optional[int] = None,
+        tts: bool = False,
     ) -> Optional[Message]:
         data = {"content": content, "tts": tts, "nonce": self.nonce}
 
@@ -341,37 +350,41 @@ class Messageable(Channel):
 
             uploaded_files = await self.upload_image(files)
             data.update({"attachments": uploaded_files})
-        
 
         if self.type in (1, 3):
             headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
         else:
-            headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
+            headers = {
+                "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
+            }
         json = await self.http.request(
-            "POST",
-            f"/channels/{self.id}/messages",
-            headers=headers,
-            json=data
+            "POST", f"/channels/{self.id}/messages", headers=headers, json=data
         )
- 
+
         if json is not None:
             if delete_after != None:
                 msg = Message(json, self.bot)
                 await asyncio.create_task(self.delayed_delete(msg, delete_after))
                 return msg
-         
+
             return Message(json, self.bot)
 
     async def delete(self) -> Optional[Messageable]:
-        if self.type in (1,3):
+        if self.type in (1, 3):
             json = await self.http.request(
-                "DELETE", f"/channels/{self.id}?silent=false",
-                headers = {"referer": f"https://canary.discord.com/channels/@me/{self.id}"}
+                "DELETE",
+                f"/channels/{self.id}?silent=false",
+                headers={
+                    "referer": f"https://canary.discord.com/channels/@me/{self.id}"
+                },
             )
         else:
             json = await self.http.request(
-                "DELETE", f"/channels/{self.id}",
-                headers = {"referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"}
+                "DELETE",
+                f"/channels/{self.id}",
+                headers={
+                    "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
+                },
             )
 
     async def history(self, limit: int = 50, bot_user_only: bool = False):
@@ -383,8 +396,7 @@ class Messageable(Channel):
                 "referer": f"https://canary.discord.com/channels/{self.guild_id}/{self.id}"
             }
         json = await self.http.request(
-            "GET", f"/channels/{self.id}/messages?limit=50",
-            headers=headers
+            "GET", f"/channels/{self.id}/messages?limit=50", headers=headers
         )
         msgs = []
         if json is None:
@@ -393,7 +405,7 @@ class Messageable(Channel):
         for message in json:
             message.update({"guild_id": self.guild_id})
             msg = Message(message, self.bot)
-            
+
             if bot_user_only:
                 if msg.author.id == self.bot.user.id:
                     msgs.append(msg)
@@ -408,13 +420,14 @@ class Messageable(Channel):
         while n < limit:
             if json is None:
                 return msgs
-            
+
             if len(json) == 0:
                 return msgs
             last = msgs[-1]
             json = await self.http.request(
-                "GET", f"/channels/{self.id}/messages?before={last.id}&limit=50",
-                headers=headers
+                "GET",
+                f"/channels/{self.id}/messages?before={last.id}&limit=50",
+                headers=headers,
             )
 
             for message in json:
@@ -429,16 +442,18 @@ class Messageable(Channel):
                 n += 1
 
         return msgs[:limit]
-    
+
     async def search_base(
         self,
         content: Optional[str] = None,
-        has: Optional[Literal["link", "embed", "file", "video", "image", "sound"]] = None,
+        has: Optional[
+            Literal["link", "embed", "file", "video", "image", "sound"]
+        ] = None,
         from_: Optional[str] = None,
         mentions: Optional[str] = None,
         max: Optional[int] = None,
         min: Optional[int] = None,
-        offset: Optional[int] = None
+        offset: Optional[int] = None,
     ) -> Optional[list[Message]]:
         params = {
             "content": content,
@@ -447,32 +462,37 @@ class Messageable(Channel):
             "mentions": mentions,
             "max": max,
             "min": min,
-
-            "offset": offset
+            "offset": offset,
         }
         params = {k: v for k, v in params.items() if v is not None}
         json = await self.http.request(
             "GET", f"/guilds/{self.id}/messages/search", params=params
         )
-        
+
         if json is not None:
-            for messages in json['messages']:
+            for messages in json["messages"]:
                 for message in messages:
                     message.update({"guild_id": self.guild_id})
                     msg = Message(message, self.bot)
-                   
+
                     self.bot.cached_messages[message.id] = msg
-            return [Message(message, self.bot) for messages in json['messages'] for message in messages]
+            return [
+                Message(message, self.bot)
+                for messages in json["messages"]
+                for message in messages
+            ]
 
     async def search(
         self,
         content: Optional[str] = None,
-        has: Optional[Literal["link", "embed", "file", "video", "image", "sound"]] = None,
+        has: Optional[
+            Literal["link", "embed", "file", "video", "image", "sound"]
+        ] = None,
         from_: Optional[str] = None,
         mentions: Optional[str] = None,
         max: Optional[int] = None,
         min: Optional[int] = None,
-        amount: int = 25
+        amount: int = 25,
     ) -> list[Message]:
         n = 0
         msgs = []
@@ -484,7 +504,7 @@ class Messageable(Channel):
                 mentions=mentions,
                 max=max,
                 min=min,
-                offset=n
+                offset=n,
             )
             if msg is not None:
                 if len(msg) == 0:
@@ -492,39 +512,33 @@ class Messageable(Channel):
                 n += len(msg)
                 msgs.extend(msg)
         return msgs
-    
+
     async def get_webhooks(self) -> Optional[list[Webhook]]:
-        json = await self.http.request(
-            "GET", f"/channels/{self.id}/webhooks"
-        )
+        json = await self.http.request("GET", f"/channels/{self.id}/webhooks")
         if json is not None:
             return [Webhook(webhook, self.bot) for webhook in json]
-
 
     async def purge(self, amount: int):
         msgs = await self.history(amount, bot_user_only=True)
         for i in range(0, len(msgs), 2):
-            await asyncio.gather(*(msg.delete() for msg in msgs[i:i+2]))
-
+            await asyncio.gather(*(msg.delete() for msg in msgs[i : i + 2]))
 
 
 class DMChannel(Messageable, Callable):
     def __init__(self, payload: dict, bot: Bot):
 
         super().__init__(payload, bot)
-      
+
         super().update(payload)
-  
+
         self.bot = bot
         self.http = bot.http
 
         self.update(payload)
 
-
     @property
     def recipient(self):
         return self.bot.fetch_user(self.recipient_id)
-
 
     def update(self, payload: dict):
 
@@ -532,10 +546,8 @@ class DMChannel(Messageable, Callable):
             if isinstance(recipien, str):
                 self.recipient_id = recipien
             else:
-                self.recipient_id = recipien['id']
+                self.recipient_id = recipien["id"]
 
-
-        
         self.is_spam: Optional[bool] = payload.get("is_spam")
 
     def get_user(self):
@@ -580,6 +592,7 @@ class TextChannel(Messageable):
     """
     This class is used to represent a text channel in Discord.
     """
+
     def __init__(self, payload: dict, bot: Bot):
         self.bot = bot
         self.http = bot.http
@@ -596,24 +609,28 @@ class TextChannel(Messageable):
         self.name = payload.get("name")
         self.last_pin_timestamp = payload.get("last_pin_timestamp")
 
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
-    async def edit(self, name: str="", topic: str="", nsfw: bool=False, timeout: int=0):
+    async def edit(
+        self, name: str = "", topic: str = "", nsfw: bool = False, timeout: int = 0
+    ):
         self.name = name
         self.nsfw = nsfw
         self.rate_limit_per_user = timeout
 
         await self.http.request(
-            "patch", "/channels/" + self.id, json={
-                    "name": name,
-                    "type": 0,
-                    "topic": topic,
-                    "bitrate": 64000,
-                    "user_limit": 0,
-                    "nsfw": nsfw,
-                    "flags": 0,
-                    "rate_limit_per_user": timeout
-            }
+            "patch",
+            "/channels/" + self.id,
+            json={
+                "name": name,
+                "type": 0,
+                "topic": topic,
+                "bitrate": 64000,
+                "user_limit": 0,
+                "nsfw": nsfw,
+                "flags": 0,
+                "rate_limit_per_user": timeout,
+            },
         )
 
 
@@ -629,7 +646,7 @@ class VoiceChannel(Messageable, Callable):
         self.guild_id = payload.get("guild_id")
         self.category_id = payload.get("parent_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
         self.user_limit = payload.get("user_limit")
         self.topic = payload.get("topic")
         self.rtc_region = payload.get("rtc_region")
@@ -652,7 +669,7 @@ class Category(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class Announcement(Messageable):
@@ -667,7 +684,7 @@ class Announcement(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class AnnouncementThread(Messageable):
@@ -682,7 +699,7 @@ class AnnouncementThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class PublicThread(Messageable):
@@ -697,7 +714,7 @@ class PublicThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class PrivateThread(Messageable):
@@ -712,7 +729,7 @@ class PrivateThread(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class StageChannel(Messageable):
@@ -728,7 +745,7 @@ class StageChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class Directory(Messageable):
@@ -743,7 +760,7 @@ class Directory(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class ForumChannel(Messageable):
@@ -771,7 +788,7 @@ class ForumChannel(Messageable):
         self.default_forum_layout = payload.get("default_forum_layout")
         self.available_tags = payload.get("available_tags")
 
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class MediaChannel(Messageable):
@@ -786,16 +803,14 @@ class MediaChannel(Messageable):
         self.name = payload.get("name")
         self.guild_id = payload.get("guild_id")
         self.position = payload.get("position")
-        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])] # type: ignore
-
-
+        self.permission_overwrites = [PermissionOverwrite(overwrite, self.bot) for overwrite in payload.get("permission_overwrites", [])]  # type: ignore
 
 
 class Convert(Messageable):
     def __new__(cls, payload: dict, bot: Bot) -> Messageable:
-        
+
         tpe = payload["type"]
-     
+
         if tpe == 0:
             return TextChannel(payload, bot)
         if tpe == 1:

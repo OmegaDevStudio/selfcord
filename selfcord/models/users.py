@@ -325,17 +325,23 @@ class Member(User):
                     setattr(self, key, value)
 
 
-    async def kick(self, user_id: str, reason: str = ""):
+    async def kick(self, reason: str = ""):
         await self.http.request(
             "DELETE", f"/guilds/{self.guild_id}/members/{self.id}",
             headers={"X-Audit-Log-Reason": reason}
         )
 
-    async def ban(self, user_id: str, reason: str = "", delete_message_seconds: int = 0):
+    async def ban(self, reason: str = "", delete_message_seconds: int = 0):
         await self.http.request(
             "PUT", f"/guilds/{self.guild_id}/bans/{self.id}",
             json={"delete_message_seconds": delete_message_seconds},
             headers={"X-Audit-Log-Reason": reason}
+        )
+
+    async def unban(self):
+        await self.http.request(
+            "DELETE",
+            f"/guilds/{self.guild_id}/bans/{self.id}",
         )
     
 

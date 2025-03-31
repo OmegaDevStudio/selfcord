@@ -32,7 +32,7 @@ class Webhook:
     
     @property
     def guild(self) -> Optional[Guild]:
-        return self.bot.get_guild(self.guild_id)
+        return self.bot.fetch_guild(self.guild_id)
     
 
 
